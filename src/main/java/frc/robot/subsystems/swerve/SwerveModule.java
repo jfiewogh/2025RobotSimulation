@@ -1,6 +1,7 @@
 package frc.robot.subsystems.swerve;
 
 import frc.robot.hardware.MotorController.MotorConfig;
+import frc.robot.hardware.SimMotor;
 
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.sim.TalonFXSimState;
@@ -12,11 +13,8 @@ import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
 
 public class SwerveModule {
-    private final TalonFX driveMotor;
-    private final TalonFX angleMotor;
-
-    private final TalonFXSimState simDriveMotor;
-    private final TalonFXSimState simAngleMotor;
+    private final SimMotor driveSimMotor;
+    private final SimMotor angleSimMotor;
 
     private static final double driveGearRatio = 1.0 / 5.0;
     private static final double angleGearRatio = 1.0 / 3.0 / 4.0;
@@ -24,15 +22,12 @@ public class SwerveModule {
 
     public static final double maxDriveSpeedMetersPerSecond = 5;
 
-    private static final PIDController pidController = new PIDController(20, 0, 2);
+    private static final PIDController pidController = new PIDController(50, 1, 10);
     
 
     public SwerveModule(MotorConfig driveMotorConfig, MotorConfig angleMotorConfig) {
-        driveMotor = new TalonFX(driveMotorConfig.getDeviceId());
-        angleMotor = new TalonFX(angleMotorConfig.getDeviceId());
-
-        simDriveMotor = new TalonFXSimState(driveMotor);
-        simAngleMotor = new TalonFXSimState(angleMotor);
+        driveSimMotor = new SimMotor();
+        angleSimMotor = new SimMotor();
     }
 
     public void setState(SwerveModuleState state) {
@@ -57,31 +52,34 @@ public class SwerveModule {
     }
 
     public SwerveModuleState getModuleState() {
-        double speedMetersPerSecond = getLinearVelocity(Units.rotationsToRadians(driveMotorToWheel(driveMotor.getRotorVelocity().getValueAsDouble())), wheelRadius);
+        double speedMetersPerSecond = getLinearVelocity(Units.rotationsToRadians(driveMotorToWheel(driveSimMotor.getSpeedRotationsPerSecond())), wheelRadius);
         return new SwerveModuleState(speedMetersPerSecond, getWheelAnglePosition());
     }
 
     public void setSimDriveMotorSpeed(double driveMotorSpeedRotationsPerSecond) {
-        simDriveMotor.setRotorVelocity(driveMotorSpeedRotationsPerSecond);
-        simDriveMotor.setRawRotorPosition(getDriveRotorPosition() + driveMotorSpeedRotationsPerSecond * 0.02);
+        driveSimMotor.setSpeedRotationsPerSecond(driveMotorSpeedRotationsPerSecond);
     }
 
     public void setSimAngleMotorSpeed(double angleMotorSpeedRotationsPerSecond) {
-        simAngleMotor.setRotorVelocity(angleMotorSpeedRotationsPerSecond);
-        simAngleMotor.setRawRotorPosition(getAngleRotorPosition() + angleMotorSpeedRotationsPerSecond * 0.02);
-        // System.out.println(angleMotor.getRotorPosition());
+        angleSimMotor.setSpeedRotationsPerSecond(angleMotorSpeedRotationsPerSecond);
     }
 
-    public double getDriveRotorPosition() {
-        return driveMotor.getRotorPosition().getValueAsDouble();
+    public void updateSimMotors(double time) {
+        driveSimMotor.update(time);
+        angleSimMotor.update(time);
     }
-    public double getAngleRotorPosition() {
-        return angleMotor.getRotorPosition().getValueAsDouble();
+
+    public double getDriveSimMotorPosition() {
+        return driveSimMotor.getPositionRotations();
     }
+    public double getAngleSimMotorPosition() {
+        return angleSimMotor.getPositionRotations();
+    }
+
     public Rotation2d getWheelAnglePosition() {
         // System.out.println(getAngleRotorPosition());
         // System.out.println(Rotation2d.fromRotations(angleMotorToWheel(getAngleRotorPosition())));
-        return normalizeAngle(Rotation2d.fromRotations(angleMotorToWheel(getAngleRotorPosition())));
+        return normalizeAngle(Rotation2d.fromRotations(angleMotorToWheel(getAngleSimMotorPosition())));
     }
 
     public static double driveMotorToWheel(double value) {
@@ -113,7 +111,7 @@ public class SwerveModule {
     }
 
     public SwerveModulePosition getPosition() {
-        double distanceMeters = driveMotorToWheel(Units.rotationsToRadians(getDriveRotorPosition())) * wheelRadius;
+        double distanceMeters = driveMotorToWheel(Units.rotationsToRadians(getDriveSimMotorPosition())) * wheelRadius;
         return new SwerveModulePosition(
             distanceMeters,
             getWheelAnglePosition()

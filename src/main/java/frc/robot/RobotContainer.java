@@ -34,26 +34,26 @@ import com.pathplanner.lib.commands.PathPlannerAuto;
 public class RobotContainer {
   private final ExampleSubsystem m_exampleSubsystem = new ExampleSubsystem();
 
+  private final Joystick joystick = new Joystick(0);
+  private final Joystick joystickA = new Joystick(1);
+
   // The robot's subsystems and commands are defined here...
-  private final SwerveSubsystem swerveSubsystem = new SwerveSubsystem();
-  private final ElevatorSubsystem elevatorSubsystem = new ElevatorSubsystem();
+  private final SwerveSubsystem swerveSubsystem = new SwerveSubsystem(joystick, joystickA);
+  private final ElevatorSubsystem elevatorSubsystem = new ElevatorSubsystem(swerveSubsystem);
 
   // Replace with CommandPS4Controller or CommandJoystick if needed
   private final CommandXboxController m_driverController =
       new CommandXboxController(OperatorConstants.kDriverControllerPort);
-
-  private final Joystick joystick = new Joystick(0);
-  private final Joystick joystickA = new Joystick(1);
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
     // Configure the trigger bindings
     configureBindings();
 
-    swerveSubsystem.setDefaultCommand(new InstantCommand(
-      () -> swerveSubsystem.fieldCentricSwerve(() -> joystick.getRawAxis(1), () -> joystick.getRawAxis(0), () -> joystickA.getRawAxis(0)),
-      swerveSubsystem
-    ));
+    // swerveSubsystem.setDefaultCommand(new InstantCommand(
+    //   () -> swerveSubsystem.fieldCentricSwerve(() -> joystick.getRawAxis(1), () -> joystick.getRawAxis(0), () -> joystickA.getRawAxis(0)),
+    //   swerveSubsystem
+    // ));
     // swerveSubsystem2.setDefaultCommand(new InstantCommand(
     //   () -> swerveSubsystem2.fieldCentricSwerve(() -> joystick.getRawAxis(1), () -> joystick.getRawAxis(0), () -> joystickA.getRawAxis(0)),
     //   swerveSubsystem2
@@ -70,7 +70,8 @@ public class RobotContainer {
    * joysticks}.
    */
   private void configureBindings() {
-    new JoystickButton(joystick, 1).onTrue(elevatorSubsystem.goUp());
+    new JoystickButton(joystick, 1).onTrue(elevatorSubsystem.levelFourCommand());
+    new JoystickButton(joystick, 2).onTrue(elevatorSubsystem.levelOneCommand());
   }
 
   /**

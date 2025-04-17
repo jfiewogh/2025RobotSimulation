@@ -25,6 +25,8 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.Timer;
 import frc.robot.hardware.MotorController.MotorConfig;
 
 public class SwerveSubsystem extends SubsystemBase {
@@ -53,25 +55,45 @@ public class SwerveSubsystem extends SubsystemBase {
   StructArrayPublisher<SwerveModuleState> modulesPublisher = NetworkTableInstance.getDefault()
     .getStructArrayTopic("MyStates", SwerveModuleState.struct).publish();
 
+  StructPublisher<ChassisSpeeds> currentSpeeds = NetworkTableInstance.getDefault()
+    .getStructTopic("CurrentSpeeds", ChassisSpeeds.struct).publish();
+  StructPublisher<ChassisSpeeds> otherSpeeds = NetworkTableInstance.getDefault()
+    .getStructTopic("OtherSpeeds", ChassisSpeeds.struct).publish();
+
+  StructPublisher<Rotation2d> gyroAngle = NetworkTableInstance.getDefault()
+    .getStructTopic("GyroAngle", Rotation2d.struct).publish();
+
+
   SwerveModulePosition[] lastPositions;
 
-  public static final double maxDriveSpeedMetersPerSecond = 3;
+  public static final double maxDriveSpeedMetersPerSecond = 5;
   // public static final double maxDriveAccelerationMetersPerSecondSquared = 3;
 
-  private static final double driveBaseRadius = Math.hypot(wheelBase / 2, trackWidth / 2);
+  private static final double driveBaseRadius = Math.hypot(wheelBase / 4, trackWidth / 4);
   private static final double maxRotationSpeedRadiansPerSecond = SwerveModule.getAngularVelocity(SwerveModule.maxDriveSpeedMetersPerSecond, driveBaseRadius);
 
   private Rotation2d rawGyroRotation = new Rotation2d();
 
   RobotConfig config;
 
+  Joystick joystick;
+  Joystick joystick2;
+
+  Timer timer = new Timer();
+  
+
   /** Creates a new SwerveSubsystem. */
-  public SwerveSubsystem() {
+  public SwerveSubsystem(Joystick joystick, Joystick joystick2) {
     lastPositions = getModulePositions();
 
     System.out.println(maxRotationSpeedRadiansPerSecond);
 
     initAuto();
+
+    this.joystick = joystick;
+    this.joystick2 = joystick2;
+
+    timer.restart();
   }
 
   public void initAuto() {
@@ -89,7 +111,7 @@ public class SwerveSubsystem extends SubsystemBase {
             this::getPose, // Robot pose supplier
             this::resetPose, // Method to reset odometry (will be called if your auto has a starting pose)
             this::getRobotRelativeSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
-            (speeds, feedforwards) -> setChassisSpeeds(speeds), // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds. Also optionally outputs individual module feedforwards
+            (speeds, feedforwards) -> setChassisSpeedsAuto(speeds), // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds. Also optionally outputs individual module feedforwards
             new PPHolonomicDriveController( // PPHolonomicController is the built in path following controller for holonomic drive trains
                     new PIDConstants(2.0, 0.0, 0.0), // Translation PID constants
                     new PIDConstants(5.0, 0.0, 0.0) // Rotation PID constants
@@ -110,6 +132,12 @@ public class SwerveSubsystem extends SubsystemBase {
     );
   }
 
+
+
+  // there is still a small drift
+
+
+
   public void updateOdometer() {
     SwerveModulePosition[] modulePositions = getModulePositions();
 
@@ -124,7 +152,11 @@ public class SwerveSubsystem extends SubsystemBase {
 
     Twist2d twist = kinematics.toTwist2d(moduleDeltas);
 
-    rawGyroRotation = rawGyroRotation.plus(Rotation2d.fromRadians(twist.dtheta));
+
+
+    rawGyroRotation = Rotation2d.fromRadians(rawGyroRotation.getRadians() + twist.dtheta);
+
+
 
     poseEstimator.update(rawGyroRotation, modulePositions);
 
@@ -160,34 +192,81 @@ public class SwerveSubsystem extends SubsystemBase {
     for (int i = 0; i < 4; i++) {
       moduleStates[i] = modules[i].getModuleState();
     }
-    SwerveDriveKinematics.desaturateWheelSpeeds(moduleStates, SwerveModule.maxDriveSpeedMetersPerSecond);
     return moduleStates;
   }
 
+  double previousTime = 0;
+
   @Override
   public void periodic() {
+    // System.out.println("odometer");
+
+    fieldCentricSwerve(() -> joystick.getRawAxis(1), () -> joystick.getRawAxis(0), () -> joystick2.getRawAxis(0));
+
+
+
+    // help
+
+    for (int i = 0; i < 4; i++) {
+      modules[i].updateSimMotors(timer.get() - previousTime);
+    }
+
+    // drifting is worse if after updateOdometer();
+
+
+
+
     updateOdometer();
 
+    gyroAngle.set(rawGyroRotation);
+
+
+
     posePublisher.set(getPose());
+
+    currentSpeeds.set(kinematics.toChassisSpeeds(getModuleStates()));
 
     modulesPublisher.set(getModuleStates());
 
 
-    // System.out.println(getPose());
+    previousTime = timer.get();
   }
 
   public void setChassisSpeeds(ChassisSpeeds speeds) {
     SwerveModuleState[] moduleStates = kinematics.toSwerveModuleStates(speeds);
+    SwerveDriveKinematics.desaturateWheelSpeeds(moduleStates, SwerveModule.maxDriveSpeedMetersPerSecond);
     for (int i = 0; i < 4; i++) {
       modules[i].setState(moduleStates[i]);
     }
+  }
+  public void setChassisSpeedsAuto(ChassisSpeeds speeds) {
+    setChassisSpeeds(speeds);
+    for (int i = 0; i < 4; i++) {
+      modules[i].updateSimMotors(0.02);
+    }
+    updateOdometer();
   }
 
   public void fieldCentricSwerve(DoubleSupplier leftStickY, DoubleSupplier leftStickX, DoubleSupplier rightStickX) {
     double xSpeed = -leftStickY.getAsDouble() * maxDriveSpeedMetersPerSecond;
     double ySpeed = -leftStickX.getAsDouble() * maxDriveSpeedMetersPerSecond;
-    double rotationSpeed = -rightStickX.getAsDouble() * maxRotationSpeedRadiansPerSecond;
-    ChassisSpeeds speeds = ChassisSpeeds.fromFieldRelativeSpeeds(xSpeed, ySpeed, rotationSpeed, getGyroAngle());
+    double rotationSpeed = -rightStickX.getAsDouble() * maxRotationSpeedRadiansPerSecond * 0.5;
+
+    // robotCentricSwerve(xSpeed, ySpeed, rotationSpeed);
+
+    double offsetRadians = -rawGyroRotation.getRadians();
+
+
+    // xSpeed = xSpeed * Math.cos(offsetRadians) - ySpeed * Math.sin(offsetRadians);
+    // ySpeed = xSpeed * Math.sin(offsetRadians) + ySpeed * Math.cos(offsetRadians);
+
+    // ChassisSpeeds speeds = new ChassisSpeeds(xSpeed, ySpeed, rotationSpeed);
+
+    ChassisSpeeds speeds = ChassisSpeeds.fromFieldRelativeSpeeds(xSpeed, ySpeed, rotationSpeed, rawGyroRotation);
+
+    otherSpeeds.set(speeds);
+
+
     setChassisSpeeds(speeds);
   }
 
