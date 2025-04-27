@@ -4,25 +4,20 @@
 
 package frc.robot;
 
-import java.util.ArrayList;
-import frc.robot.Constants.OperatorConstants;
-import frc.robot.commands.AutoCommand;
-import frc.robot.commands.Autos;
-import frc.robot.subsystems.ExampleSubsystem;
+
+import frc.robot.commands.LeftAlignCommand;
+import frc.robot.commands.RightAlignCommand;
 import frc.robot.subsystems.ElevatorSubsystem;
 import frc.robot.subsystems.swerve.SwerveSubsystem;
+import frc.robot.subsystems.swerve.Vision;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import edu.wpi.first.math.trajectory.Trajectory;
-import edu.wpi.first.math.trajectory.TrajectoryConfig;
-import edu.wpi.first.math.trajectory.TrajectoryGenerator;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.Joystick;
+
+import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.commands.PathPlannerAuto;
 
 /**
@@ -32,21 +27,39 @@ import com.pathplanner.lib.commands.PathPlannerAuto;
  * subsystems, commands, and trigger mappings) should be declared here.
  */
 public class RobotContainer {
-  private final ExampleSubsystem m_exampleSubsystem = new ExampleSubsystem();
 
-  private final Joystick joystick = new Joystick(0);
-  private final Joystick joystickA = new Joystick(1);
+  private final Joystick keyboardLeftStick = new Joystick(0);
+  private final Joystick keyboardRightStick = new Joystick(1);
+  private final Joystick realController = new Joystick(2);
 
   // The robot's subsystems and commands are defined here...
-  private final SwerveSubsystem swerveSubsystem = new SwerveSubsystem(joystick, joystickA);
-  private final ElevatorSubsystem elevatorSubsystem = new ElevatorSubsystem(swerveSubsystem);
+  private final SwerveSubsystem swerveSubsystem = new SwerveSubsystem(Constants.kControllerType, keyboardLeftStick, keyboardRightStick, realController);
 
-  // Replace with CommandPS4Controller or CommandJoystick if needed
-  private final CommandXboxController m_driverController =
-      new CommandXboxController(OperatorConstants.kDriverControllerPort);
+  private final ElevatorSubsystem elevatorSubsystem = new ElevatorSubsystem(swerveSubsystem);
+  private final Vision vision = new Vision(swerveSubsystem);
+
+  private final LeftAlignCommand leftAlignCommand = new LeftAlignCommand(vision);
+  private final RightAlignCommand rightAlignCommand = new RightAlignCommand(vision);
+
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
+
+    NamedCommands.registerCommand("LeftAlign", leftAlignCommand);
+    NamedCommands.registerCommand("RightAlign", rightAlignCommand);
+    
+    NamedCommands.registerCommand("L4", elevatorSubsystem.levelFourCommand());
+
+    NamedCommands.registerCommand("L1", elevatorSubsystem.levelOneCommand());
+
+    NamedCommands.registerCommand("UpAndDown", new SequentialCommandGroup(
+      elevatorSubsystem.levelFourCommand(),
+      elevatorSubsystem.levelOneCommand()
+    ));
+
+    NamedCommands.registerCommand("ElevatorDown", elevatorSubsystem.goDown());
+
+
     // Configure the trigger bindings
     configureBindings();
 
@@ -70,8 +83,20 @@ public class RobotContainer {
    * joysticks}.
    */
   private void configureBindings() {
-    new JoystickButton(joystick, 1).onTrue(elevatorSubsystem.levelFourCommand());
-    new JoystickButton(joystick, 2).onTrue(elevatorSubsystem.levelOneCommand());
+    new JoystickButton(keyboardLeftStick, 1).onTrue(elevatorSubsystem.levelFourCommand());
+    new JoystickButton(keyboardLeftStick, 2).onTrue(elevatorSubsystem.levelOneCommand());
+
+    new JoystickButton(keyboardLeftStick, 3).onTrue(leftAlignCommand);
+    new JoystickButton(keyboardLeftStick, 4).onTrue(rightAlignCommand);
+  
+    switch (Constants.kControllerType) {
+      case KEYBOARD:
+        new JoystickButton(keyboardRightStick, 1).onTrue(swerveSubsystem.resetGyroCommand());
+        break;
+      case XBOX:
+        new JoystickButton(realController, 1).onTrue(swerveSubsystem.resetGyroCommand());
+        break;
+    }
   }
 
   /**

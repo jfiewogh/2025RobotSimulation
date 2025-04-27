@@ -11,14 +11,13 @@ import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Twist2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -27,6 +26,10 @@ import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants.ControllerType;
 import frc.robot.hardware.MotorController.MotorConfig;
 
 public class SwerveSubsystem extends SubsystemBase {
@@ -52,46 +55,58 @@ public class SwerveSubsystem extends SubsystemBase {
   private final StructPublisher<Pose2d> posePublisher = NetworkTableInstance.getDefault()
     .getStructTopic("MyPose", Pose2d.struct).publish();
 
-  StructArrayPublisher<SwerveModuleState> modulesPublisher = NetworkTableInstance.getDefault()
+  private final StructArrayPublisher<SwerveModuleState> modulesPublisher = NetworkTableInstance.getDefault()
     .getStructArrayTopic("MyStates", SwerveModuleState.struct).publish();
 
-  StructPublisher<ChassisSpeeds> currentSpeeds = NetworkTableInstance.getDefault()
+  private final StructPublisher<ChassisSpeeds> currentSpeeds = NetworkTableInstance.getDefault()
     .getStructTopic("CurrentSpeeds", ChassisSpeeds.struct).publish();
-  StructPublisher<ChassisSpeeds> otherSpeeds = NetworkTableInstance.getDefault()
+
+  private final StructPublisher<ChassisSpeeds> otherSpeeds = NetworkTableInstance.getDefault()
     .getStructTopic("OtherSpeeds", ChassisSpeeds.struct).publish();
 
-  StructPublisher<Rotation2d> gyroAngle = NetworkTableInstance.getDefault()
+  private final StructPublisher<Rotation2d> gyroAngle = NetworkTableInstance.getDefault()
     .getStructTopic("GyroAngle", Rotation2d.struct).publish();
 
 
-  SwerveModulePosition[] lastPositions;
+  private SwerveModulePosition[] lastPositions;
 
-  public static final double maxDriveSpeedMetersPerSecond = 5;
-  // public static final double maxDriveAccelerationMetersPerSecondSquared = 3;
-
-  private static final double driveBaseRadius = Math.hypot(wheelBase / 4, trackWidth / 4);
-  private static final double maxRotationSpeedRadiansPerSecond = SwerveModule.getAngularVelocity(SwerveModule.maxDriveSpeedMetersPerSecond, driveBaseRadius);
+  public static final double kChosenMaxDriveSpeedMetersPerSecond = 5;
+  
+  private static final double kDriveBaseRadius = Math.hypot(wheelBase / 2, trackWidth / 2);
+  public static final double kMaxRotationSpeedRadiansPerSecond = SwerveUtils.getAngularValue(SwerveModule.kPhysicalMaxDriveSpeedMetersPerSecond, kDriveBaseRadius);
 
   private Rotation2d rawGyroRotation = new Rotation2d();
 
-  RobotConfig config;
+  private RobotConfig config;
 
-  Joystick joystick;
-  Joystick joystick2;
+  private DoubleSupplier getLeftStickX;
+  private DoubleSupplier getLeftStickY;
+  private DoubleSupplier getRightStickX;
 
-  Timer timer = new Timer();
+
+  private Timer timer = new Timer();
   
 
   /** Creates a new SwerveSubsystem. */
-  public SwerveSubsystem(Joystick joystick, Joystick joystick2) {
+  public SwerveSubsystem(ControllerType controllerType, Joystick keyboardLeft, Joystick keyboardRight, Joystick real) {
     lastPositions = getModulePositions();
 
-    System.out.println(maxRotationSpeedRadiansPerSecond);
+    System.out.println("Max Rotation: " + kMaxRotationSpeedRadiansPerSecond);
 
     initAuto();
 
-    this.joystick = joystick;
-    this.joystick2 = joystick2;
+    switch (controllerType) {
+      case KEYBOARD:
+        getLeftStickX = () -> keyboardLeft.getRawAxis(0);
+        getLeftStickY = () -> keyboardLeft.getRawAxis(1);
+        getRightStickX = () -> keyboardRight.getRawAxis(0);
+        break;
+      case XBOX:
+        getLeftStickX = () -> real.getRawAxis(0);
+        getLeftStickY = () -> real.getRawAxis(1);
+        getRightStickX = () -> real.getRawAxis(4);
+        break;
+    }
 
     timer.restart();
   }
@@ -113,7 +128,7 @@ public class SwerveSubsystem extends SubsystemBase {
             this::getRobotRelativeSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
             (speeds, feedforwards) -> setChassisSpeedsAuto(speeds), // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds. Also optionally outputs individual module feedforwards
             new PPHolonomicDriveController( // PPHolonomicController is the built in path following controller for holonomic drive trains
-                    new PIDConstants(2.0, 0.0, 0.0), // Translation PID constants
+                    new PIDConstants(5.0, 0.0, 0.0), // Translation PID constants
                     new PIDConstants(5.0, 0.0, 0.0) // Rotation PID constants
             ),
             config, // The robot configuration
@@ -132,13 +147,7 @@ public class SwerveSubsystem extends SubsystemBase {
     );
   }
 
-
-
-  // there is still a small drift
-
-
-
-  public void updateOdometer() {
+  public void updateOdometry() {
     SwerveModulePosition[] modulePositions = getModulePositions();
 
     SwerveModulePosition[] moduleDeltas = new SwerveModulePosition[4];
@@ -148,17 +157,11 @@ public class SwerveSubsystem extends SubsystemBase {
         modulePositions[i].angle
       );
     }
-
+    poseEstimator.update(rawGyroRotation, modulePositions);
 
     Twist2d twist = kinematics.toTwist2d(moduleDeltas);
 
-
-
-    rawGyroRotation = Rotation2d.fromRadians(rawGyroRotation.getRadians() + twist.dtheta);
-
-
-
-    poseEstimator.update(rawGyroRotation, modulePositions);
+    rawGyroRotation = rawGyroRotation.plus(Rotation2d.fromRadians(twist.dtheta));
 
     lastPositions = modulePositions;
   }
@@ -195,78 +198,44 @@ public class SwerveSubsystem extends SubsystemBase {
     return moduleStates;
   }
 
-  double previousTime = 0;
+  // ANY DRIFTING IS DUE TO PID (the angle does not get to desired position instantly)
 
   @Override
   public void periodic() {
-    // System.out.println("odometer");
-
-    fieldCentricSwerve(() -> joystick.getRawAxis(1), () -> joystick.getRawAxis(0), () -> joystick2.getRawAxis(0));
-
-
-
-    // help
-
-    for (int i = 0; i < 4; i++) {
-      modules[i].updateSimMotors(timer.get() - previousTime);
-    }
-
-    // drifting is worse if after updateOdometer();
-
-
-
-
-    updateOdometer();
+    fieldCentricSwerve(getLeftStickY, getLeftStickX, getRightStickX);
 
     gyroAngle.set(rawGyroRotation);
 
-
+    updateOdometry();
 
     posePublisher.set(getPose());
 
     currentSpeeds.set(kinematics.toChassisSpeeds(getModuleStates()));
 
     modulesPublisher.set(getModuleStates());
-
-
-    previousTime = timer.get();
   }
 
   public void setChassisSpeeds(ChassisSpeeds speeds) {
     SwerveModuleState[] moduleStates = kinematics.toSwerveModuleStates(speeds);
-    SwerveDriveKinematics.desaturateWheelSpeeds(moduleStates, SwerveModule.maxDriveSpeedMetersPerSecond);
+    SwerveDriveKinematics.desaturateWheelSpeeds(moduleStates, SwerveModule.kPhysicalMaxDriveSpeedMetersPerSecond);
+    
+    otherSpeeds.set(kinematics.toChassisSpeeds(moduleStates));
+    
     for (int i = 0; i < 4; i++) {
       modules[i].setState(moduleStates[i]);
     }
   }
   public void setChassisSpeedsAuto(ChassisSpeeds speeds) {
     setChassisSpeeds(speeds);
-    for (int i = 0; i < 4; i++) {
-      modules[i].updateSimMotors(0.02);
-    }
-    updateOdometer();
+    updateOdometry();
   }
 
   public void fieldCentricSwerve(DoubleSupplier leftStickY, DoubleSupplier leftStickX, DoubleSupplier rightStickX) {
-    double xSpeed = -leftStickY.getAsDouble() * maxDriveSpeedMetersPerSecond;
-    double ySpeed = -leftStickX.getAsDouble() * maxDriveSpeedMetersPerSecond;
-    double rotationSpeed = -rightStickX.getAsDouble() * maxRotationSpeedRadiansPerSecond * 0.5;
-
-    // robotCentricSwerve(xSpeed, ySpeed, rotationSpeed);
-
-    double offsetRadians = -rawGyroRotation.getRadians();
-
-
-    // xSpeed = xSpeed * Math.cos(offsetRadians) - ySpeed * Math.sin(offsetRadians);
-    // ySpeed = xSpeed * Math.sin(offsetRadians) + ySpeed * Math.cos(offsetRadians);
-
-    // ChassisSpeeds speeds = new ChassisSpeeds(xSpeed, ySpeed, rotationSpeed);
+    double xSpeed = -leftStickY.getAsDouble() * kChosenMaxDriveSpeedMetersPerSecond;
+    double ySpeed = -leftStickX.getAsDouble() * kChosenMaxDriveSpeedMetersPerSecond;
+    double rotationSpeed = -rightStickX.getAsDouble() * kMaxRotationSpeedRadiansPerSecond;
 
     ChassisSpeeds speeds = ChassisSpeeds.fromFieldRelativeSpeeds(xSpeed, ySpeed, rotationSpeed, rawGyroRotation);
-
-    otherSpeeds.set(speeds);
-
-
     setChassisSpeeds(speeds);
   }
 
@@ -275,7 +244,20 @@ public class SwerveSubsystem extends SubsystemBase {
     setChassisSpeeds(speeds);
   }
 
+  public void stop() {
+    for (int i = 0; i < 4; i++) {
+      modules[i].stop();
+    }
+  }
+
   @Override
   public void simulationPeriodic() {
+  }
+
+  // Commands
+
+  // does not work for simulation
+  public Command resetGyroCommand() {
+    return new InstantCommand(() -> rawGyroRotation = Rotation2d.kZero);
   }
 }
