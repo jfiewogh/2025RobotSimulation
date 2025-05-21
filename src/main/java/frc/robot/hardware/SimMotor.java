@@ -13,7 +13,7 @@ public class SimMotor {
     }
 
     private void updatePosition(double time) {
-        rotations += speedRotationsPerSecond * (0.02);
+        rotations += speedRotationsPerSecond * 0.02;
         // lastUpdateTime = time;
     }
 

@@ -8,6 +8,7 @@ package frc.robot;
 import frc.robot.commands.LeftAlignCommand;
 import frc.robot.commands.RightAlignCommand;
 import frc.robot.subsystems.ElevatorSubsystem;
+import frc.robot.subsystems.TestSubsystem;
 import frc.robot.subsystems.swerve.SwerveSubsystem;
 import frc.robot.subsystems.swerve.Vision;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -15,6 +16,7 @@ import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.Joystick;
 
 import com.pathplanner.lib.auto.NamedCommands;
@@ -38,6 +40,8 @@ public class RobotContainer {
   private final ElevatorSubsystem elevatorSubsystem = new ElevatorSubsystem(swerveSubsystem);
   private final Vision vision = new Vision(swerveSubsystem);
 
+  private final TestSubsystem testSubsystem = new TestSubsystem();
+
   private final LeftAlignCommand leftAlignCommand = new LeftAlignCommand(vision);
   private final RightAlignCommand rightAlignCommand = new RightAlignCommand(vision);
 
@@ -57,7 +61,7 @@ public class RobotContainer {
       elevatorSubsystem.levelOneCommand()
     ));
 
-    NamedCommands.registerCommand("ElevatorDown", elevatorSubsystem.goDown());
+    NamedCommands.registerCommand("ElevatorDown", elevatorSubsystem.goDownCommand());
 
 
     // Configure the trigger bindings
@@ -83,8 +87,8 @@ public class RobotContainer {
    * joysticks}.
    */
   private void configureBindings() {
-    new JoystickButton(keyboardLeftStick, 1).onTrue(elevatorSubsystem.levelFourCommand());
-    new JoystickButton(keyboardLeftStick, 2).onTrue(elevatorSubsystem.levelOneCommand());
+    new JoystickButton(keyboardLeftStick, 1).onTrue(testSubsystem.setDesiredAngleCommand(Rotation2d.fromDegrees(0)));
+    new JoystickButton(keyboardLeftStick, 2).onTrue(testSubsystem.setDesiredAngleCommand(Rotation2d.fromDegrees(90)));
 
     new JoystickButton(keyboardLeftStick, 3).onTrue(leftAlignCommand);
     new JoystickButton(keyboardLeftStick, 4).onTrue(rightAlignCommand);

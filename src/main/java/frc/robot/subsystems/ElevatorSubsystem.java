@@ -49,25 +49,19 @@ public class ElevatorSubsystem extends SubsystemBase {
 
   public double speedRotationsPerSecond = 0;
 
-
-  double desiredPositionMeters = 0;
-
-
-  Mechanism2d mechanism = new Mechanism2d(2, 4);
+  private double desiredPositionMeters = kStartingHeight;
 
   /** Creates a new ElevatorSubsystem. */
   public ElevatorSubsystem(SwerveSubsystem swerveSubsystem) {
-    mechanism.getRoot("this", 0.2, 0).append(new MechanismLigament2d("extend", 1, 90));
-    mechanism.getRoot("other", -0.2, 0).append(new MechanismLigament2d("expand", 1, 90));
- 
     this.swerveSubsystem = swerveSubsystem;
+    leftMotorEncoder.setPosition(Mechanism.kElevator.fromMechanism(kStartingHeight));
   }
 
-  public Command goUp() {
+  public Command goUpCommand() {
     return new InstantCommand(() -> setSpeedSim(2));
   }
 
-  public Command goDown() {
+  public Command goDownCommand() {
     return new InstantCommand(
       () -> {
         desiredPositionMeters = 0;
@@ -128,7 +122,6 @@ public class ElevatorSubsystem extends SubsystemBase {
     rightMotorEncoder.setPosition(leftMotorEncoder.getPosition() + speed * 0.02);
 
     if (getLeftBarHeight() < Units.inchesToMeters(1)) {
-      System.out.println("yep");
       speedRotationsPerSecond = 0;
     }
 
@@ -145,7 +138,7 @@ public class ElevatorSubsystem extends SubsystemBase {
 
     boolean a = Math.abs(desiredPositionMeters - getLeftBarHeight()) < Units.inchesToMeters(0.5);
 
-    System.out.println(a + " " + desiredPositionMeters + " " + getLeftBarHeight());
+    // System.out.println(a + " " + desiredPositionMeters + " " + getLeftBarHeight());
 
     return a;
   }

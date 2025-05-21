@@ -51,6 +51,11 @@ public final class Constants {
     public static final PIDController kElevatorController = new PIDController(10, 0, 0);
   }
 
+  public static enum Robot {
+    TEST(),
+    CANiel();
+  }
+
   public static enum Mechanism {
     kDrive(1.0 / 5.0),
     kAngle(1.0 / 3.0 / 4.0),
