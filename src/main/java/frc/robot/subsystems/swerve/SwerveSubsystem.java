@@ -6,10 +6,10 @@ package frc.robot.subsystems.swerve;
 
 import java.util.function.DoubleSupplier;
 
-import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.config.PIDConstants;
-import com.pathplanner.lib.config.RobotConfig;
-import com.pathplanner.lib.controllers.PPHolonomicDriveController;
+// import com.pathplanner.lib.auto.AutoBuilder;
+// import com.pathplanner.lib.config.PIDConstants;
+// import com.pathplanner.lib.config.RobotConfig;
+// import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -77,7 +77,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
   private Rotation2d rawGyroRotation = new Rotation2d();
 
-  private RobotConfig config;
+  // private RobotConfig config;
 
   private DoubleSupplier getLeftStickX;
   private DoubleSupplier getLeftStickY;
@@ -93,7 +93,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
     System.out.println("Max Rotation: " + kMaxRotationSpeedRadiansPerSecond);
 
-    initAuto();
+    // initAuto();
 
     switch (controllerType) {
       case KEYBOARD:
@@ -111,6 +111,7 @@ public class SwerveSubsystem extends SubsystemBase {
     timer.restart();
   }
 
+  /*
   public void initAuto() {
     // Load the RobotConfig from the GUI settings. You should probably
     // store this in your Constants file
@@ -146,6 +147,7 @@ public class SwerveSubsystem extends SubsystemBase {
             this // Reference to this subsystem to set requirements
     );
   }
+    */
 
   public void updateOdometry() {
     SwerveModulePosition[] modulePositions = getModulePositions();

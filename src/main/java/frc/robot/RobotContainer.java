@@ -19,8 +19,8 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.Joystick;
 
-import com.pathplanner.lib.auto.NamedCommands;
-import com.pathplanner.lib.commands.PathPlannerAuto;
+// import com.pathplanner.lib.auto.NamedCommands;
+// import com.pathplanner.lib.commands.PathPlannerAuto;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -40,7 +40,7 @@ public class RobotContainer {
   private final ElevatorSubsystem elevatorSubsystem = new ElevatorSubsystem(swerveSubsystem);
   private final Vision vision = new Vision(swerveSubsystem);
 
-  private final TestSubsystem testSubsystem = new TestSubsystem();
+  private final TestSubsystem testSubsystem = new TestSubsystem(swerveSubsystem);
 
   private final LeftAlignCommand leftAlignCommand = new LeftAlignCommand(vision);
   private final RightAlignCommand rightAlignCommand = new RightAlignCommand(vision);
@@ -49,6 +49,7 @@ public class RobotContainer {
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
 
+    /*
     NamedCommands.registerCommand("LeftAlign", leftAlignCommand);
     NamedCommands.registerCommand("RightAlign", rightAlignCommand);
     
@@ -62,7 +63,7 @@ public class RobotContainer {
     ));
 
     NamedCommands.registerCommand("ElevatorDown", elevatorSubsystem.goDownCommand());
-
+*/
 
     // Configure the trigger bindings
     configureBindings();
@@ -87,11 +88,11 @@ public class RobotContainer {
    * joysticks}.
    */
   private void configureBindings() {
-    new JoystickButton(keyboardLeftStick, 1).onTrue(testSubsystem.setDesiredAngleCommand(Rotation2d.fromDegrees(0)));
-    new JoystickButton(keyboardLeftStick, 2).onTrue(testSubsystem.setDesiredAngleCommand(Rotation2d.fromDegrees(90)));
+    new JoystickButton(keyboardLeftStick, 1).onTrue(testSubsystem.setArmDesiredAngleCommand(Rotation2d.fromDegrees(0)));
+    new JoystickButton(keyboardLeftStick, 2).onTrue(testSubsystem.setArmDesiredAngleCommand(Rotation2d.fromDegrees(90)));
 
-    new JoystickButton(keyboardLeftStick, 3).onTrue(leftAlignCommand);
-    new JoystickButton(keyboardLeftStick, 4).onTrue(rightAlignCommand);
+    new JoystickButton(keyboardLeftStick, 3).onTrue(testSubsystem.setIntakeDesiredAngleCommand(Rotation2d.fromDegrees(0)));
+    new JoystickButton(keyboardLeftStick, 4).onTrue(testSubsystem.setIntakeDesiredAngleCommand(Rotation2d.fromDegrees(90)));
   
     switch (Constants.kControllerType) {
       case KEYBOARD:
@@ -129,6 +130,7 @@ public class RobotContainer {
     // // An example command will be run in autonomous
     // return new AutoCommand(swerveSubsystem, trajectory);
 
-    return new PathPlannerAuto("New Auto");
+    return new SequentialCommandGroup();
+    // return new PathPlannerAuto("New Auto");
   }
 }
