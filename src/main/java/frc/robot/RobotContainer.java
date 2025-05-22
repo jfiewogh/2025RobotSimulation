@@ -88,8 +88,8 @@ public class RobotContainer {
    * joysticks}.
    */
   private void configureBindings() {
-    new JoystickButton(keyboardLeftStick, 1).onTrue(testSubsystem.setArmDesiredAngleCommand(Rotation2d.fromDegrees(0)));
-    new JoystickButton(keyboardLeftStick, 2).onTrue(testSubsystem.setArmDesiredAngleCommand(Rotation2d.fromDegrees(90)));
+    new JoystickButton(keyboardLeftStick, 1).onTrue(testSubsystem.retractCommand());
+    new JoystickButton(keyboardLeftStick, 2).onTrue(testSubsystem.extendCommand());
 
     new JoystickButton(keyboardLeftStick, 3).onTrue(testSubsystem.setIntakeDesiredAngleCommand(Rotation2d.fromDegrees(0)));
     new JoystickButton(keyboardLeftStick, 4).onTrue(testSubsystem.setIntakeDesiredAngleCommand(Rotation2d.fromDegrees(90)));
