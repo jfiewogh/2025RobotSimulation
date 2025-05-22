@@ -17,12 +17,15 @@ import frc.robot.hardware.SimMotor;
 import frc.robot.subsystems.swerve.SwerveSubsystem;
 
 public class TestSubsystem extends SubsystemBase {
-    private final SimMotor firstMotor = new SimMotor();
-    private final SimMotor armMotor = new SimMotor();
-    private final SimMotor intakeMotor = new SimMotor();
+    private final SimMotor armMotor1 = new SimMotor();
+    private final SimMotor armMotor2 = new SimMotor();
+    private final SimMotor armMotor3 = new SimMotor();
+
+    private final SimMotor cubeIntakeMotor = new SimMotor();
 
     private final CustomPIDController firstController = new CustomPIDController(1, 0, 0.001, 0.25, 1);
-    private final CustomPIDController armController = new CustomPIDController(1, 0, 0.001, 0.25, 1);
+    private final CustomPIDController secondController = new CustomPIDController(1, 0, 0.001, 0.25, 1);
+    
     private final CustomPIDController intakeController = new CustomPIDController(1, 0, 0, 0.25, 2);
 
     private final Pose3d initialPose0 = new Pose3d(
@@ -107,8 +110,8 @@ public class TestSubsystem extends SubsystemBase {
 
     public Command extendCommand() {
         return new SequentialCommandGroup(
-            new InstantCommand(() -> setFirstDesiredAngle(Rotation2d.fromDegrees(-45))),
-            new InstantCommand(() -> setArmDesiredAngle(Rotation2d.fromDegrees(120)))
+            new InstantCommand(() -> setFirstDesiredAngle(Rotation2d.fromDegrees(-55))),
+            new InstantCommand(() -> setArmDesiredAngle(Rotation2d.fromDegrees(150)))
         );
     }
     public Command retractCommand() {
@@ -124,16 +127,16 @@ public class TestSubsystem extends SubsystemBase {
         // ARM
 
         // First Motor
-        double firstMotorSpeed = firstController.calculateFromSetpoint(firstMotor.getPositionRotations(), firstDesiredAngle.getRotations());
-        firstMotor.setSpeedRotationsPerSecond(firstMotorSpeed);
-        double firstPitchRadians = Units.rotationsToRadians(firstMotor.getPositionRotations());
+        double firstMotorSpeed = firstController.calculateFromSetpoint(armMotor1.getPositionRotations(), firstDesiredAngle.getRotations());
+        armMotor1.setSpeedRotationsPerSecond(firstMotorSpeed);
+        double firstPitchRadians = Units.rotationsToRadians(armMotor1.getPositionRotations());
 
         pose0 = new Pose3d(pose0.getTranslation(), new Rotation3d(0, firstPitchRadians + initialPose0.getRotation().getY(), 0)); 
 
         // Second Motor
-        double armMotorSpeed = armController.calculateFromSetpoint(armMotor.getPositionRotations(), armDesiredAngle.getRotations());
-        armMotor.setSpeedRotationsPerSecond(armMotorSpeed);
-        double armPitchRadians = Units.rotationsToRadians(armMotor.getPositionRotations());
+        double secondMotorSpeed = secondController.calculateFromSetpoint(armMotor2.getPositionRotations(), armDesiredAngle.getRotations());
+        armMotor2.setSpeedRotationsPerSecond(secondMotorSpeed);
+        double secondPitchRadians = Units.rotationsToRadians(armMotor2.getPositionRotations());
 
         // System.out.println(armPitchRadians);
 
@@ -141,23 +144,23 @@ public class TestSubsystem extends SubsystemBase {
 
         pose1 = new Pose3d(
             new Translation3d(pose0.getX() + radius1 * Math.sin(firstPitchRadians), initialPose1.getY(), pose0.getZ() + radius1 * Math.cos(firstPitchRadians)), 
-            new Rotation3d(initialPose1.getRotation().getX(), initialPose1.getRotation().getY() + firstPitchRadians + armPitchRadians, initialPose1.getRotation().getZ())
+            new Rotation3d(initialPose1.getRotation().getX(), initialPose1.getRotation().getY() + firstPitchRadians + secondPitchRadians, initialPose1.getRotation().getZ())
         );
 
         // Third Motor
         double radius2 = initialPose2.getZ() - initialPose1.getZ();
 
         pose2 = new Pose3d(
-            new Translation3d(pose1.getX() + radius2 * Math.sin(firstPitchRadians + armPitchRadians), initialPose2.getY(), pose1.getZ() + radius2 * Math.cos(firstPitchRadians + armPitchRadians)),
+            new Translation3d(pose1.getX() + radius2 * Math.sin(firstPitchRadians + secondPitchRadians), initialPose2.getY(), pose1.getZ() + radius2 * Math.cos(firstPitchRadians + secondPitchRadians)),
             new Rotation3d(initialPose2.getRotation().getX(), initialPose2.getRotation().getY(), initialPose2.getRotation().getZ())
         );
 
 
         // INTAKE
-        double intakeMotorSpeed = intakeController.calculateFromSetpoint(intakeMotor.getPositionRotations(), intakeDesiredAngle.getRotations());
-        intakeMotor.setSpeedRotationsPerSecond(intakeMotorSpeed);
+        double intakeMotorSpeed = intakeController.calculateFromSetpoint(cubeIntakeMotor.getPositionRotations(), intakeDesiredAngle.getRotations());
+        cubeIntakeMotor.setSpeedRotationsPerSecond(intakeMotorSpeed);
 
-        double intakePitchRadians = Units.rotationsToRadians(intakeMotor.getPositionRotations());
+        double intakePitchRadians = Units.rotationsToRadians(cubeIntakeMotor.getPositionRotations());
         pose3 = new Pose3d(pose3.getTranslation(), new Rotation3d(0, intakePitchRadians + initialPose3.getRotation().getY(), 0));
 
 
