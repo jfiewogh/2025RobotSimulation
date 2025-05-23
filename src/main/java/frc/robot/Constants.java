@@ -29,8 +29,8 @@ public final class Constants {
   }
 
   public static class RobotConstants {
-    public static double kBumperWidthMeters = 1; // random num
-    public static double kBumperLengthMeters = 1;
+    public static final double kBumperWidthMeters = Units.inchesToMeters(34.5);
+    public static final double kBumperLengthMeters = Units.inchesToMeters(34.5);
   }
 
   public static final double kWheelRadius = Units.inchesToMeters(1.5);
@@ -47,8 +47,6 @@ public final class Constants {
 
     public static final CustomPIDController kModuleAngleController = new CustomPIDController(
       1, 0, 0.001, 0.25, MechanismSpeed.kAngle.getMaxMechanismSpeedRotationsPerSecond());
-
-    public static final PIDController kElevatorController = new PIDController(10, 0, 0);
   }
 
   public static enum Mechanism {
@@ -120,7 +118,20 @@ public final class Constants {
     );
   }
 
-  public static enum ReefAprilTag {
+  public static enum AprilTag {
+    k1(657.37, 25.80, 58.50, 126, 0),
+    k2(657.37, 291.20, 58.50, 234, 0),
+    k12(0, 0, 0, 0, 0),
+    k13(0, 0, 0, 0, 0),
+
+    k3(0, 0, 0, 0, 0),
+    k16(0, 0, 0, 0, 0),
+
+    k4(0, 0, 0, 0, 30),
+    k5(0, 0, 0, 0, 30),
+    k14(0, 0, 0, 0, 30),
+    k15(0, 0, 0,0, 30),
+
     // opponent side
     k6(530.49, 130.17, 12.13, 300, 0),
     k7(546.87, 158.50, 12.13, 0, 0),
@@ -129,6 +140,7 @@ public final class Constants {
     k10(481.39, 158.50, 12.13, 180, 0),
     k11(497.77, 130.17, 12.13, 240, 0),
 
+    // alliance side
     k17(160.39, 130.17, 12.13, 240, 0),
     k18(144.00, 158.50, 12.13, 180, 0),
     k19(160.39, 186.83, 12.13, 120, 0),
@@ -140,7 +152,7 @@ public final class Constants {
     private final Pose2d leftAlignPose;
     private final Pose2d rightAlignPose;
 
-    private ReefAprilTag(double x, double y, double z, double zRotation, double yRotation) {
+    private AprilTag(double x, double y, double z, double zRotation, double yRotation) {
       pose = new Pose3d(
         Units.inchesToMeters(x), Units.inchesToMeters(y), Units.inchesToMeters(z), 
         new Rotation3d(0, Units.degreesToRadians(yRotation), Units.degreesToRadians(zRotation)));
@@ -162,44 +174,18 @@ public final class Constants {
     }
   }
 
-  public enum BargeAprilTag {
-
-  }
-
-  public enum SourceAprilTag {
-
-  }
-
-  public enum ProcesserAprilTag {
-
-  }
-
-  public enum AprilTag {
-    // values in inches
-
-    k1(657.37, 25.80, 58.50, 126, 0),
-    k2(657.37, 291.20, 58.50, 234, 0),
-    k12(0, 0, 0, 0, 0),
-    k13(0, 0, 0, 0, 0),
-
-    k3(0, 0, 0, 0, 0),
-    k16(0, 0, 0, 0, 0),
-
-    k4(0, 0, 0, 0, 30),
-    k5(0, 0, 0, 0, 30),
-    k14(0, 0, 0, 0, 30),
-    k15(0, 0, 0,0, 30);
-
-    private final Pose3d pose;
-
-    private AprilTag(double x, double y, double z, double zRotation, double yRotation) {
-      pose = new Pose3d(
-        Units.inchesToMeters(x), Units.inchesToMeters(y), Units.inchesToMeters(z), 
-        new Rotation3d(0, Units.degreesToRadians(yRotation), Units.degreesToRadians(zRotation)));
-    }
-
-    public Pose3d getPose() {
-      return pose;
-    }
-  }
+  public static AprilTag[] reefAprilTags = {
+    AprilTag.k6, 
+    AprilTag.k7,
+    AprilTag.k8,
+    AprilTag.k9,
+    AprilTag.k10,
+    AprilTag.k11,
+    AprilTag.k17,
+    AprilTag.k18,
+    AprilTag.k19,
+    AprilTag.k20,
+    AprilTag.k21,
+    AprilTag.k22
+  };
 }

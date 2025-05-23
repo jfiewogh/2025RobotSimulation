@@ -48,13 +48,13 @@ public class RobotContainer {
     NamedCommands.registerCommand("LeftAlign", leftAlignCommand);
     NamedCommands.registerCommand("RightAlign", rightAlignCommand);
     
-    NamedCommands.registerCommand("L4", elevatorSubsystem.levelFourCommand());
+    NamedCommands.registerCommand("L4", elevatorSubsystem.waitForCommand(elevatorSubsystem.levelFourCommand()));
 
-    NamedCommands.registerCommand("L1", elevatorSubsystem.levelOneCommand());
+    NamedCommands.registerCommand("L1", elevatorSubsystem.waitForCommand(elevatorSubsystem.levelOneCommand()));
 
     NamedCommands.registerCommand("UpAndDown", new SequentialCommandGroup(
-      elevatorSubsystem.levelFourCommand(),
-      elevatorSubsystem.levelOneCommand()
+      NamedCommands.getCommand("L4"),
+      NamedCommands.getCommand("L1")
     ));
 
     NamedCommands.registerCommand("ElevatorDown", elevatorSubsystem.goDown());

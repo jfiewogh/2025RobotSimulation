@@ -8,6 +8,7 @@ import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
 
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
@@ -24,43 +25,53 @@ import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.Constants.Mechanism;
 import frc.robot.Constants.MotorSpeed;
 import frc.robot.Constants.PIDConstants;
+import frc.robot.hardware.CustomPIDController;
+import frc.robot.hardware.SimMotor;
 import frc.robot.subsystems.swerve.SwerveSubsystem;
 
 public class ElevatorSubsystem extends SubsystemBase {
-  StructPublisher<Pose3d> leftBar = NetworkTableInstance.getDefault()
-    .getStructTopic("LeftBar", Pose3d.struct).publish();
-  
-  StructPublisher<Pose3d> rightBar = NetworkTableInstance.getDefault()
-    .getStructTopic("RightBar", Pose3d.struct).publish();
-
-  private Pose3d leftBarPose = new Pose3d();
-  private Pose3d rightBarPose = new Pose3d();
-
-  private final SparkMax leftMotor = new SparkMax(6, MotorType.kBrushless); 
-  private final SparkMax rightMotor = new SparkMax(5, MotorType.kBrushless);
-
-  private final RelativeEncoder leftMotorEncoder = leftMotor.getEncoder();
-  private final RelativeEncoder rightMotorEncoder = rightMotor.getEncoder();
+  private final SimMotor leftMotor = new SimMotor();
+  private final SimMotor rightMotor = new SimMotor();
 
   private final SwerveSubsystem swerveSubsystem;
 
   private static final double kMaxElevatorHeightMeters = Units.inchesToMeters(72);
-  private static final double kStartingHeight = 0; // unused should affect motor encoder position
+  private static final double kStartingHeightMeters = 0;
+
+  private static final CustomPIDController kElevatorController = new CustomPIDController(
+    1, 0, 0, kMaxElevatorHeightMeters, MotorSpeed.kVortex.getFreeSpeedRotationsPerSecond());
 
   public double speedRotationsPerSecond = 0;
 
+  private double desiredPositionMeters = 0;
 
-  double desiredPositionMeters = 0;
+  /* Stage Constants */
+  private final double stage0Height = 1; // temporary
+  private final double stage1Height = 1;
+  private final double stage2Height = 1;
+  private final double stage3Height = 1;
 
 
-  Mechanism2d mechanism = new Mechanism2d(2, 4);
+  /* Simulation Components */
+  private Pose3d stage0Pose = Pose3d.kZero;
+  private Pose3d stage1Pose = Pose3d.kZero;
+  private Pose3d stage2Pose = Pose3d.kZero;
+  private Pose3d stage3Pose = Pose3d.kZero;
+
+  private final StructPublisher<Pose3d> stage0Publisher = NetworkTableInstance.getDefault()
+    .getStructTopic("Stage0", Pose3d.struct).publish();
+  private final StructPublisher<Pose3d> stage1Publisher = NetworkTableInstance.getDefault()
+    .getStructTopic("Stage1", Pose3d.struct).publish();
+  private final StructPublisher<Pose3d> stage2Publisher = NetworkTableInstance.getDefault()
+    .getStructTopic("Stage2", Pose3d.struct).publish();
+  private final StructPublisher<Pose3d> stage3Publisher = NetworkTableInstance.getDefault()
+    .getStructTopic("Stage3", Pose3d.struct).publish();
 
   /** Creates a new ElevatorSubsystem. */
   public ElevatorSubsystem(SwerveSubsystem swerveSubsystem) {
-    mechanism.getRoot("this", 0.2, 0).append(new MechanismLigament2d("extend", 1, 90));
-    mechanism.getRoot("other", -0.2, 0).append(new MechanismLigament2d("expand", 1, 90));
- 
     this.swerveSubsystem = swerveSubsystem;
+    leftMotor.setPositionRotations(Mechanism.kElevator.fromMechanism(kStartingHeightMeters));
+    rightMotor.setPositionRotations(leftMotor.getPositionRotations());
   }
 
   public Command goUp() {
@@ -72,81 +83,64 @@ public class ElevatorSubsystem extends SubsystemBase {
       () -> {
         desiredPositionMeters = 0;
         setSpeedSim(-MotorSpeed.kVortex.getFreeSpeedRotationsPerSecond() * 0.7);
-      });
+      }
+    );
   }
 
   public Command levelFourCommand() {
-    return new SequentialCommandGroup(
-      new InstantCommand(() -> {
-        desiredPositionMeters = Units.feetToMeters(7);
-        System.out.println("Lets go");
-      }),
-      new WaitUntilCommand(this::atSetpoint)
-    );
+    return new InstantCommand(() -> desiredPositionMeters = Units.feetToMeters(1));
   }
 
   public Command levelOneCommand() {
+    return new InstantCommand(() -> desiredPositionMeters = 0);
+  }
+
+  public Command waitForCommand(Command command) {
     return new SequentialCommandGroup(
-      new InstantCommand(() -> desiredPositionMeters = 0),
+      command,
       new WaitUntilCommand(this::atSetpoint)
     );
   }
-
-
 
   public void setSpeedSim(double speedRotationsPerSecond) {
     this.speedRotationsPerSecond = speedRotationsPerSecond;
   }
 
-
-
-  // meters
-  public double getLeftBarHeight() {
-    return Mechanism.kElevator.toMechanism(leftMotorEncoder.getPosition());
+  public double getLeftBarHeightMeters() {
+    return Mechanism.kElevator.toMechanism(leftMotor.getPositionRotations());
   }
-  public double getRightBarHeight() {
-    return Mechanism.kElevator.toMechanism(rightMotorEncoder.getPosition());
+  public double getRightBarHeightMeters() {
+    return Mechanism.kElevator.toMechanism(rightMotor.getPositionRotations());
   }
 
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
 
-    double speed = speedRotationsPerSecond;
+    double motorSpeed = speedRotationsPerSecond;
 
-    // System.out.println(desiredPositionMeters);
-
-    // for some elevator moves after done
-
-    if (speed == 0 && !atSetpoint()) {
-      double mechanismSpeed = PIDConstants.kElevatorController.calculate(getLeftBarHeight() / kMaxElevatorHeightMeters, desiredPositionMeters / kMaxElevatorHeightMeters);
-      double motorSpeed = Mechanism.kElevator.fromMechanism(mechanismSpeed);
-      speed = Math.signum(motorSpeed) * Math.min(Math.abs(motorSpeed), MotorSpeed.kVortex.getFreeSpeedRotationsPerSecond());
+    if (motorSpeed == 0 && !atSetpoint()) {
+      motorSpeed = kElevatorController.calculateFromSetpoint(getLeftBarHeightMeters(), desiredPositionMeters);
     }
 
-    leftMotorEncoder.setPosition(leftMotorEncoder.getPosition() + speed * 0.02);
-    rightMotorEncoder.setPosition(leftMotorEncoder.getPosition() + speed * 0.02);
+    leftMotor.setSpeedRotationsPerSecond(motorSpeed);
+    rightMotor.setSpeedRotationsPerSecond(motorSpeed);
 
-    if (getLeftBarHeight() < Units.inchesToMeters(1)) {
-      System.out.println("yep");
+    if (getLeftBarHeightMeters() < Units.inchesToMeters(1)) {
       speedRotationsPerSecond = 0;
     }
 
-    Pose2d robotPose = swerveSubsystem.getPose();
+    stage1Pose = new Pose3d(0, 0, getLeftBarHeightMeters(), Rotation3d.kZero);
+    stage2Pose = new Pose3d(0, 0, getLeftBarHeightMeters() + getRightBarHeightMeters(), Rotation3d.kZero);
 
-    leftBarPose = new Pose3d(robotPose.getX(), robotPose.getY(), getLeftBarHeight(), Rotation3d.kZero);
-    rightBarPose = new Pose3d(robotPose.getX(), robotPose.getY(), getRightBarHeight(), Rotation3d.kZero);
-
-    leftBar.set(leftBarPose);
-    rightBar.set(rightBarPose);
+    stage0Publisher.set(stage0Pose);
+    stage1Publisher.set(stage1Pose);
+    stage2Publisher.set(stage2Pose);
+    stage3Publisher.set(stage3Pose);
   }
 
+  /** Returns whether current position is within 0.5 inches of desired position */
   public boolean atSetpoint() {
-
-    boolean a = Math.abs(desiredPositionMeters - getLeftBarHeight()) < Units.inchesToMeters(0.5);
-
-    System.out.println(a + " " + desiredPositionMeters + " " + getLeftBarHeight());
-
-    return a;
+    return Math.abs(desiredPositionMeters - getLeftBarHeightMeters()) < Units.inchesToMeters(0.5);
   }
 }

@@ -51,11 +51,11 @@ public class SwerveModule {
     }
 
     public void setSimDriveMotorSpeed(double driveMotorSpeedRotationsPerSecond) {
-        driveSimMotor.setSpeedRotationsPerSecond(driveMotorSpeedRotationsPerSecond);
+        driveSimMotor.setSpeedAndUpdatePosition(driveMotorSpeedRotationsPerSecond);
     }
 
     public void setSimAngleMotorSpeed(double angleMotorSpeedRotationsPerSecond) {
-        angleSimMotor.setSpeedRotationsPerSecond(angleMotorSpeedRotationsPerSecond);
+        angleSimMotor.setSpeedAndUpdatePosition(angleMotorSpeedRotationsPerSecond);
     }
 
     public void stop() {

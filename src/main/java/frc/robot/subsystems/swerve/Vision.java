@@ -7,12 +7,11 @@ package frc.robot.subsystems.swerve;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.Constants.ReefAprilTag;
+import frc.robot.Constants;
+import frc.robot.Constants.AprilTag;
 import frc.robot.Constants.VisionConstants;
 import frc.robot.hardware.CustomPIDController;
 
@@ -26,7 +25,7 @@ public class Vision extends SubsystemBase {
   private final PIDController translationController = new PIDController(2, 0, 0);
 
   private final CustomPIDController rotationController = new CustomPIDController(
-    2, 0, 0, Math.PI / 2, SwerveSubsystem.kMaxRotationSpeedRadiansPerSecond);
+    2, 0, 0, Math.PI / 2, SwerveSubsystem.kPhysicalMaxRotationSpeedRadiansPerSecond);
 
   /** Creates a new Vision. */
   public Vision(SwerveSubsystem swerveSubsystem) {
@@ -41,23 +40,24 @@ public class Vision extends SubsystemBase {
   }
 
   public void leftReefAlign() {
-    ReefAprilTag closestAprilTag = getClosestReefAprilTag();
+    AprilTag closestAprilTag = getClosestReefAprilTag();
     setDesiredPosition(closestAprilTag.getLeftAlignPose());
   }
 
   public void rightReefAlign() {
-    ReefAprilTag closestAprilTag = getClosestReefAprilTag();
+    AprilTag closestAprilTag = getClosestReefAprilTag();
     setDesiredPosition(closestAprilTag.getRightAlignPose());
   }
 
-  public ReefAprilTag getClosestReefAprilTag() {
-    ReefAprilTag[] aprilTags = ReefAprilTag.class.getEnumConstants();
+  /** Returns the closest reef april tag */
+  public AprilTag getClosestReefAprilTag() {
+    AprilTag[] aprilTags = Constants.reefAprilTags;
 
-    ReefAprilTag closestAprilTag = aprilTags[0];
+    AprilTag closestAprilTag = aprilTags[0];
     double minDistance = currentPosition.getTranslation().getDistance(getAprilTagTranslation2d(closestAprilTag));
 
     for (int i = 1; i < aprilTags.length; i++) {
-      ReefAprilTag aprilTag = aprilTags[i];
+      AprilTag aprilTag = aprilTags[i];
       double distance = currentPosition.getTranslation().getDistance(getAprilTagTranslation2d(aprilTag));
       if (distance < minDistance) {
         closestAprilTag = aprilTag;
@@ -68,7 +68,7 @@ public class Vision extends SubsystemBase {
     return closestAprilTag;
   }
 
-  public Translation2d getAprilTagTranslation2d(ReefAprilTag tag) {
+  public Translation2d getAprilTagTranslation2d(AprilTag tag) {
     return tag.getPose().toPose2d().getTranslation();
   }
 
@@ -87,7 +87,7 @@ public class Vision extends SubsystemBase {
 
     double rotationSpeedRadiansPerSecond = rotationController.calculateFromError(SwerveUtils.normalizeAngle(desiredPosition.getRotation().minus(currentPosition.getRotation())).getRadians());
     
-    rotationSpeedRadiansPerSecond = Math.min(rotationSpeedRadiansPerSecond, SwerveSubsystem.kMaxRotationSpeedRadiansPerSecond);
+    rotationSpeedRadiansPerSecond = Math.min(rotationSpeedRadiansPerSecond, SwerveSubsystem.kPhysicalMaxRotationSpeedRadiansPerSecond);
 
     ChassisSpeeds chassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(xSpeedMetersPerSecond, ySpeedMetersPerSecond, rotationSpeedRadiansPerSecond, currentPosition.getRotation());
     swerveSubsystem.setChassisSpeedsAuto(chassisSpeeds);
@@ -105,7 +105,7 @@ public class Vision extends SubsystemBase {
 
   // localization code based on photonvision
 
-  public void calculateCurrentPosition(ReefAprilTag aprilTag) {
+  public void calculateCurrentPosition(AprilTag aprilTag) {
     Pose3d cameraPose = VisionConstants.kCameraPose;
 
     double distance = 0;
