@@ -12,11 +12,10 @@ import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
-import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d;
-import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
@@ -24,32 +23,36 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.Constants.Mechanism;
 import frc.robot.Constants.MotorSpeed;
-import frc.robot.Constants.PIDConstants;
 import frc.robot.hardware.CustomPIDController;
 import frc.robot.hardware.SimMotor;
-import frc.robot.subsystems.swerve.SwerveSubsystem;
+
+/* Current Issues
+ * - Elevator height not matching after pressing up and down quickly
+ */
+
 
 public class ElevatorSubsystem extends SubsystemBase {
-  private final SimMotor leftMotor = new SimMotor();
-  private final SimMotor rightMotor = new SimMotor();
+  private final SimMotor elevatorMotor = new SimMotor(); // represent both motors using one
 
-  private final SwerveSubsystem swerveSubsystem;
-
-  private static final double kMaxElevatorHeightMeters = Units.inchesToMeters(72);
+  private static final double kMaxElevatorHeightMeters = 2.1; // Units.inchesToMeters(72);
+  
   private static final double kStartingHeightMeters = 0;
 
   private static final CustomPIDController kElevatorController = new CustomPIDController(
-    1, 0, 0, kMaxElevatorHeightMeters, MotorSpeed.kVortex.getFreeSpeedRotationsPerSecond());
+    15, 0.01, 0, kMaxElevatorHeightMeters, MotorSpeed.kVortex.getFreeSpeedRotationsPerSecond() * 0.8);
 
-  public double speedRotationsPerSecond = 0;
+  private double speedRotationsPerSecond = 0;
 
   private double desiredPositionMeters = 0;
 
+  private boolean constantSpeed = false;
+  private boolean goDown = false;
+
   /* Stage Constants */
-  private final double stage0Height = 1; // temporary
-  private final double stage1Height = 1;
-  private final double stage2Height = 1;
-  private final double stage3Height = 1;
+  private final double stage0HeightMeters = 0.7; // temporary
+  private final double stage1HeightMeters = 0.7;
+  private final double stage2HeightMeters = 0.7;
+  private final double stage3HeightMeters = 0.7; // unused
 
 
   /* Simulation Components */
@@ -68,10 +71,8 @@ public class ElevatorSubsystem extends SubsystemBase {
     .getStructTopic("Stage3", Pose3d.struct).publish();
 
   /** Creates a new ElevatorSubsystem. */
-  public ElevatorSubsystem(SwerveSubsystem swerveSubsystem) {
-    this.swerveSubsystem = swerveSubsystem;
-    leftMotor.setPositionRotations(Mechanism.kElevator.fromMechanism(kStartingHeightMeters));
-    rightMotor.setPositionRotations(leftMotor.getPositionRotations());
+  public ElevatorSubsystem() {
+    elevatorMotor.setPositionRotations(Mechanism.kElevator.fromMechanism(kStartingHeightMeters));
   }
 
   public Command goUp() {
@@ -82,17 +83,17 @@ public class ElevatorSubsystem extends SubsystemBase {
     return new InstantCommand(
       () -> {
         desiredPositionMeters = 0;
-        setSpeedSim(-MotorSpeed.kVortex.getFreeSpeedRotationsPerSecond() * 0.7);
+        setSpeedSim(-MotorSpeed.kVortex.getFreeSpeedRotationsPerSecond() * 0.6);
       }
     );
   }
 
   public Command levelFourCommand() {
-    return new InstantCommand(() -> desiredPositionMeters = Units.feetToMeters(1));
+    return new InstantCommand(() -> setDesiredPosition(2.1));
   }
 
   public Command levelOneCommand() {
-    return new InstantCommand(() -> desiredPositionMeters = 0);
+    return new InstantCommand(() -> setDesiredPosition(0));
   }
 
   public Command waitForCommand(Command command) {
@@ -102,36 +103,97 @@ public class ElevatorSubsystem extends SubsystemBase {
     );
   }
 
+  /** Set constant speed */
   public void setSpeedSim(double speedRotationsPerSecond) {
     this.speedRotationsPerSecond = speedRotationsPerSecond;
+    constantSpeed = true;
+    goDown = desiredPositionMeters - getElevatorHeightMeters() < 0;
+  }
+  /** Set desired position in meters */
+  public void setDesiredPosition(double position) {
+    desiredPositionMeters = position;
+    goDown = desiredPositionMeters - getElevatorHeightMeters() < 0;
   }
 
-  public double getLeftBarHeightMeters() {
-    return Mechanism.kElevator.toMechanism(leftMotor.getPositionRotations());
+
+  /** Get the pose with the z position axis only, everything else is 0 */
+  public Pose3d getPoseFromZ(double z) {
+    return new Pose3d(new Translation3d(0, 0, z), Rotation3d.kZero);
   }
-  public double getRightBarHeightMeters() {
-    return Mechanism.kElevator.toMechanism(rightMotor.getPositionRotations());
+
+
+  public double getElevatorHeightMeters() {
+    return Mechanism.kElevator.toMechanism(elevatorMotor.getPositionRotations());
   }
+
+  private double previousElevatorHeightMeters = getElevatorHeightMeters();
 
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
+    double elevatorHeightMeters = getElevatorHeightMeters();
+
+    /* Stop constant speed when
+     * at setpoint OR
+     * the velocity is in the opposite direction of the error
+     * (prevents elevator from continuing past the desired position)
+    */
+    if (constantSpeed && (atSetpoint() || Math.signum(speedRotationsPerSecond) != Math.signum(desiredPositionMeters - elevatorHeightMeters))) {
+      constantSpeed = false;
+      speedRotationsPerSecond = 0;
+      if (desiredPositionMeters == 0) {
+        speedRotationsPerSecond = 0;
+        stage1Pose = Pose3d.kZero;
+        stage2Pose = Pose3d.kZero;
+        stage3Pose = Pose3d.kZero;
+      }
+    }
 
     double motorSpeed = speedRotationsPerSecond;
-
-    if (motorSpeed == 0 && !atSetpoint()) {
-      motorSpeed = kElevatorController.calculateFromSetpoint(getLeftBarHeightMeters(), desiredPositionMeters);
+    if (!constantSpeed && !atSetpoint()) {
+      motorSpeed = kElevatorController.calculateFromSetpoint(elevatorHeightMeters, desiredPositionMeters);
     }
 
-    leftMotor.setSpeedRotationsPerSecond(motorSpeed);
-    rightMotor.setSpeedRotationsPerSecond(motorSpeed);
+    elevatorMotor.setSpeedAndUpdatePosition(motorSpeed);
 
-    if (getLeftBarHeightMeters() < Units.inchesToMeters(1)) {
-      speedRotationsPerSecond = 0;
+    double elevatorHeightChange = elevatorHeightMeters - previousElevatorHeightMeters;
+    previousElevatorHeightMeters = elevatorHeightMeters;
+
+    double stage2RelativeHeight = stage2Pose.getZ() - stage1Pose.getZ();
+    double stage3RelativeHeight = stage3Pose.getZ() - stage2Pose.getZ();
+
+    // speed is positive, going up
+    if (motorSpeed > 0) {
+      // only first stage moves
+      if (stage1Pose.getZ() != stage0HeightMeters) {
+        stage1Pose = getPoseFromZ(Math.min(stage1Pose.getZ() + elevatorHeightChange, stage0HeightMeters));
+        stage2Pose = getPoseFromZ(stage1Pose.getZ() + stage2RelativeHeight);
+        stage3Pose = getPoseFromZ(stage2Pose.getZ() + stage3RelativeHeight);
+      // only second stage moves
+      } else if (stage2Pose.getZ() != stage0HeightMeters + stage1HeightMeters) {
+        stage2Pose = getPoseFromZ(Math.min(stage2Pose.getZ() + elevatorHeightChange, stage0HeightMeters + stage1HeightMeters));
+        stage3Pose = getPoseFromZ(stage2Pose.getZ() + stage3RelativeHeight);
+      // only third stage moves
+      } else {
+        stage3Pose = getPoseFromZ(Math.min(stage3Pose.getZ() + elevatorHeightChange, stage0HeightMeters + stage1HeightMeters + stage2HeightMeters));
+      }
     }
-
-    stage1Pose = new Pose3d(0, 0, getLeftBarHeightMeters(), Rotation3d.kZero);
-    stage2Pose = new Pose3d(0, 0, getLeftBarHeightMeters() + getRightBarHeightMeters(), Rotation3d.kZero);
+    // speed is negative, going down
+    else if (motorSpeed < 0) {
+      // only first stage moves
+      if (stage1Pose.getZ() != 0) {
+        stage1Pose = getPoseFromZ(Math.max(stage1Pose.getZ() + elevatorHeightChange, 0));
+        stage2Pose = getPoseFromZ(stage1Pose.getZ() + stage2RelativeHeight);
+        stage3Pose = getPoseFromZ(stage2Pose.getZ() + stage3RelativeHeight);
+      // only second stage moves
+      } else if (stage2Pose.getZ() != 0) {
+        stage2Pose = getPoseFromZ(Math.max(stage2Pose.getZ() + elevatorHeightChange, 0));
+        stage3Pose = getPoseFromZ(stage2Pose.getZ() + stage3RelativeHeight);
+      // only third stage moves
+      } else {
+        stage3Pose = getPoseFromZ(Math.max(stage3Pose.getZ() + elevatorHeightChange, 0));
+      }
+    }
 
     stage0Publisher.set(stage0Pose);
     stage1Publisher.set(stage1Pose);
@@ -141,6 +203,8 @@ public class ElevatorSubsystem extends SubsystemBase {
 
   /** Returns whether current position is within 0.5 inches of desired position */
   public boolean atSetpoint() {
-    return Math.abs(desiredPositionMeters - getLeftBarHeightMeters()) < Units.inchesToMeters(0.5);
+    double elevatorHeightMeters = getElevatorHeightMeters();
+    return goDown && elevatorHeightMeters < desiredPositionMeters + Units.inchesToMeters(0.5)
+    || !goDown && elevatorHeightMeters > desiredPositionMeters - Units.inchesToMeters(0.5);
   }
 }

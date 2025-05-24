@@ -26,6 +26,6 @@ public class CustomPIDController {
         return calculateFromError(setpoint - currentPosition);
     }
     public double calculateFromError(double error) {
-        return controller.calculate(0, error / maxError) * maxSpeed;
+        return Math.min(controller.calculate(0, error / maxError), 1) * maxSpeed;
     }
 }

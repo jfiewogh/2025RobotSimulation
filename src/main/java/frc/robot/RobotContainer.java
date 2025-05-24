@@ -8,6 +8,7 @@ package frc.robot;
 import frc.robot.commands.LeftAlignCommand;
 import frc.robot.commands.RightAlignCommand;
 import frc.robot.subsystems.ElevatorSubsystem;
+import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.swerve.SwerveSubsystem;
 import frc.robot.subsystems.swerve.Vision;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -35,7 +36,9 @@ public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   private final SwerveSubsystem swerveSubsystem = new SwerveSubsystem(Constants.kControllerType, keyboardLeftStick, keyboardRightStick, realController);
 
-  private final ElevatorSubsystem elevatorSubsystem = new ElevatorSubsystem(swerveSubsystem);
+  private final ElevatorSubsystem elevatorSubsystem = new ElevatorSubsystem();
+  private final IntakeSubsystem intakeSubsystem = new IntakeSubsystem(elevatorSubsystem);
+
   private final Vision vision = new Vision(swerveSubsystem);
 
   private final LeftAlignCommand leftAlignCommand = new LeftAlignCommand(vision);
@@ -84,7 +87,7 @@ public class RobotContainer {
    */
   private void configureBindings() {
     new JoystickButton(keyboardLeftStick, 1).onTrue(elevatorSubsystem.levelFourCommand());
-    new JoystickButton(keyboardLeftStick, 2).onTrue(elevatorSubsystem.levelOneCommand());
+    new JoystickButton(keyboardLeftStick, 2).onTrue(elevatorSubsystem.goDown());
 
     new JoystickButton(keyboardLeftStick, 3).onTrue(leftAlignCommand);
     new JoystickButton(keyboardLeftStick, 4).onTrue(rightAlignCommand);
