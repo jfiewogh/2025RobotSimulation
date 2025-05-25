@@ -30,12 +30,6 @@
           }
         },
         {
-          "type": "named",
-          "data": {
-            "name": "ElevatorDown"
-          }
-        },
-        {
           "type": "path",
           "data": {
             "pathName": "path2"
@@ -67,12 +61,6 @@
           }
         },
         {
-          "type": "named",
-          "data": {
-            "name": "ElevatorDown"
-          }
-        },
-        {
           "type": "path",
           "data": {
             "pathName": "path4"
@@ -101,49 +89,6 @@
                 }
               }
             ]
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "ElevatorDown"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "path6"
-          }
-        },
-        {
-          "type": "path",
-          "data": {
-            "pathName": "path7"
-          }
-        },
-        {
-          "type": "parallel",
-          "data": {
-            "commands": [
-              {
-                "type": "named",
-                "data": {
-                  "name": "LeftAlign"
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "L4"
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "ElevatorDown"
           }
         }
       ]

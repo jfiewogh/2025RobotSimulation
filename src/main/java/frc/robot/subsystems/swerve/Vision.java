@@ -39,33 +39,42 @@ public class Vision extends SubsystemBase {
     currentPosition = swerveSubsystem.getPose();
   }
 
+  /** Aligns with the left reef */
   public void leftReefAlign() {
     AprilTag closestAprilTag = getClosestReefAprilTag();
     setDesiredPosition(closestAprilTag.getLeftAlignPose());
   }
 
+  /** Aligns with the right reef */
   public void rightReefAlign() {
     AprilTag closestAprilTag = getClosestReefAprilTag();
     setDesiredPosition(closestAprilTag.getRightAlignPose());
   }
 
+  /** Aligns with the closest source */
+  public void sourceAlign() {
+    AprilTag closestAprilTag = getClosestAprilTagFrom(Constants.sourceAprilTags);
+    setDesiredPosition(closestAprilTag.getSourceAlignPose());
+  }
+
+
   /** Returns the closest reef april tag */
   public AprilTag getClosestReefAprilTag() {
-    AprilTag[] aprilTags = Constants.reefAprilTags;
+    return getClosestAprilTagFrom(Constants.reefAprilTags);
+  }
 
-    AprilTag closestAprilTag = aprilTags[0];
-    double minDistance = currentPosition.getTranslation().getDistance(getAprilTagTranslation2d(closestAprilTag));
-
-    for (int i = 1; i < aprilTags.length; i++) {
-      AprilTag aprilTag = aprilTags[i];
-      double distance = currentPosition.getTranslation().getDistance(getAprilTagTranslation2d(aprilTag));
+  public AprilTag getClosestAprilTagFrom(AprilTag[] tags) {
+    AprilTag closest = tags[0];
+    double minDistance = currentPosition.getTranslation().getDistance(getAprilTagTranslation2d(closest));
+    for (int i = 1; i < tags.length; i++) {
+      AprilTag tag = tags[i];
+      double distance = currentPosition.getTranslation().getDistance(getAprilTagTranslation2d(tag));
       if (distance < minDistance) {
-        closestAprilTag = aprilTag;
+        closest = tag;
         minDistance = distance;
       }
     }
-
-    return closestAprilTag;
+    return closest;
   }
 
   public Translation2d getAprilTagTranslation2d(AprilTag tag) {

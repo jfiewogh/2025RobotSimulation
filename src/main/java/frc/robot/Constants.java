@@ -113,10 +113,13 @@ public final class Constants {
   }
 
   public class VisionConstants {
+    // figure out this later 
     public static final Pose3d kCameraPose = new Pose3d(
       new Translation3d(0, 0, 0), new Rotation3d(0, 0, 0)
     );
   }
+
+  private static final double kReefAlignOffsetMeters = 0.03;
 
   public static enum AprilTag {
     k1(657.37, 25.80, 58.50, 126, 0),
@@ -151,15 +154,22 @@ public final class Constants {
     private final Pose3d pose;
     private final Pose2d leftAlignPose;
     private final Pose2d rightAlignPose;
+    private final Pose2d sourceAlignPose;
+    private final Pose2d processorAlignPose;
+    private final Pose2d bargeAlignPose;
 
     private AprilTag(double x, double y, double z, double zRotation, double yRotation) {
       pose = new Pose3d(
         Units.inchesToMeters(x), Units.inchesToMeters(y), Units.inchesToMeters(z), 
         new Rotation3d(0, Units.degreesToRadians(yRotation), Units.degreesToRadians(zRotation)));
 
-      // I don't know why these values are flipped
-      leftAlignPose = pose.toPose2d().plus(new Transform2d(RobotConstants.kBumperLengthMeters / 2, -0.16, Rotation2d.k180deg));
-      rightAlignPose = pose.toPose2d().plus(new Transform2d(RobotConstants.kBumperLengthMeters / 2, 0.16, Rotation2d.k180deg));
+      leftAlignPose = pose.toPose2d().plus(
+        new Transform2d(RobotConstants.kBumperLengthMeters / 2 + kReefAlignOffsetMeters, -0.16, Rotation2d.k180deg));
+      rightAlignPose = pose.toPose2d().plus(
+        new Transform2d(RobotConstants.kBumperLengthMeters / 2 + kReefAlignOffsetMeters, 0.16, Rotation2d.k180deg));
+      sourceAlignPose = pose.toPose2d();
+      processorAlignPose = pose.toPose2d();
+      bargeAlignPose = pose.toPose2d();
     }
 
     public Pose3d getPose() {
@@ -172,20 +182,37 @@ public final class Constants {
     public Pose2d getRightAlignPose() {
       return rightAlignPose;
     }
+    public Pose2d getSourceAlignPose() {
+      return sourceAlignPose;
+    }
   }
 
   public static AprilTag[] reefAprilTags = {
+    // opponent
     AprilTag.k6, 
     AprilTag.k7,
     AprilTag.k8,
     AprilTag.k9,
     AprilTag.k10,
     AprilTag.k11,
+    // alliance
     AprilTag.k17,
     AprilTag.k18,
     AprilTag.k19,
     AprilTag.k20,
     AprilTag.k21,
     AprilTag.k22
+  };
+
+  public static AprilTag[] sourceAprilTags = {
+    // figure this out later
+  };
+
+  // unused, no algae intake
+  public static AprilTag[] processorAprilTags = {
+    //
+  };
+
+  public static AprilTag[] bargeAprilTags = {
   };
 }

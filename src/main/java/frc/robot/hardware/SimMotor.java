@@ -37,10 +37,10 @@ public class SimMotor extends SubsystemBase {
         this.rotations = rotations;
     }
 
-    @Override
-    public void periodic() {
-        double time = getTime();
-        updatePosition(time - lastUpdateTime);
-        lastUpdateTime = time;
-    }
+    // @Override
+    // public void periodic() {
+    //     double time = getTime();
+    //     updatePosition(time - lastUpdateTime);
+    //     lastUpdateTime = time;
+    // }
 }
