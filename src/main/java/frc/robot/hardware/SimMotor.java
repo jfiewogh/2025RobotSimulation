@@ -8,23 +8,18 @@ public class SimMotor extends SubsystemBase {
     private double rotations = 0;
 
     private double lastUpdateTime = Timer.getTimestamp(); 
-    // doesn't work for autonomous swerve for some reason
 
-    // unused
     public void setSpeedRotationsPerSecond(double speed) {
         speedRotationsPerSecond = speed;
     }
 
     public void setSpeedAndUpdatePosition(double speed) {
         setSpeedRotationsPerSecond(speed);
-        if (Timer.getTimestamp() - lastUpdateTime < 0.01) 
-            System.out.println(lastUpdateTime + " " + Timer.getTimestamp());
         updatePosition(Timer.getTimestamp() - lastUpdateTime);
     }
 
     private void updatePosition(double interval) {
         rotations += speedRotationsPerSecond * interval;
-        // .out.println(interval);
         lastUpdateTime += interval;
     }
 

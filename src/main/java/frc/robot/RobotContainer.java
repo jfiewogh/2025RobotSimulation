@@ -114,14 +114,13 @@ public class RobotContainer {
     /* Elevator and Intake */
 
     // Up or Down
-    new JoystickButton(keyboardLeftStick, 1).onTrue(
-      new InstantCommand(elevatorIntake::align));
-    // Align Score, Then Score
-
+    new JoystickButton(keyboardLeftStick, 1)
+      .onTrue(new InstantCommand(elevatorIntake::align));
+    
+    // first click: align and score
+    // second click: move down to stow
     new JoystickButton(keyboardLeftStick, 2)
-      .whileTrue(Commands.run(elevatorIntake::score)
-      // .whileTrue(Scheduler.run()new InstantCommand(() -> elevatorIntake.score()).execute())
-    );
+      .whileTrue(Commands.run(elevatorIntake::score));
 
     /* Intake and Align */
 
@@ -144,12 +143,16 @@ public class RobotContainer {
     new JoystickButton(keyboardRightStick, 3).whileTrue(sourceAlignCommand);
 
     /* Elevator Choices */
+    // delete
     new JoystickButton(keyboardThirdStick, 4).onTrue(new InstantCommand(() -> 
       elevatorIntake.setState(ElevatorState.kL4, ReefScoreState.kL4)));
+    // insert
     new JoystickButton(keyboardThirdStick, 1).onTrue(new InstantCommand(() -> 
       elevatorIntake.setState(ElevatorState.kL3, ReefScoreState.kL3)));
+    // end
     new JoystickButton(keyboardThirdStick, 5).onTrue(new InstantCommand(() -> 
       elevatorIntake.setState(ElevatorState.kL2, ReefScoreState.kL2)));
+    // home
     new JoystickButton(keyboardThirdStick, 2).onTrue(new InstantCommand(() -> 
       elevatorIntake.setState(ElevatorState.kL1, ReefScoreState.kL1)));
 

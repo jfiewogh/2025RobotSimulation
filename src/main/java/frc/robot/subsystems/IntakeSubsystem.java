@@ -25,8 +25,7 @@ public class IntakeSubsystem extends SubsystemBase {
   private final CustomPIDController armController = new CustomPIDController(
     1, 0, 0, 0.25, 1.5);
   private final CustomPIDController wristController = new CustomPIDController(
-    1, 0, 0, 0.25, 1.5
-    );
+    1, 0, 0, 0.25, 1.5);
 
   /* Simulation Components */
   private Pose3d initialArmPose = new Pose3d(0.32385, 0, 0.189207, Rotation3d.kZero);

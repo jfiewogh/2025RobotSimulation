@@ -74,6 +74,7 @@ public class ElevatorIntake extends SubsystemBase {
     this.reefScoreState = reefScoreState;
   }
 
+  /** Move elevator up or down */
   public void align() {
     if (!score) {
       if (goUp) {
@@ -86,6 +87,7 @@ public class ElevatorIntake extends SubsystemBase {
     }
   }
 
+  /** Score coral on reef */
   public void score() {
     if (!isScored) {
       if (elevatorSubsystem.getDesiredPosition() != 0 && atSetpoint()) {
@@ -101,6 +103,7 @@ public class ElevatorIntake extends SubsystemBase {
     }
   }
 
+  /** Intake coral from source (coral still appears even if not at source) */
   public void sourceIntake() {
     if (!isSourceIntake) { 
       isSourceIntake = true;
@@ -169,7 +172,7 @@ public class ElevatorIntake extends SubsystemBase {
     }
   }
 
-  public void createScoredCoral() {
+  private void createScoredCoral() {
     scoredCoralPose = coral.getPose();
     scoredCoralPublisher.set(scoredCoralPose);
     coral.visible = false;
