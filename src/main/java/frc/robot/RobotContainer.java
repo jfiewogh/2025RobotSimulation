@@ -97,6 +97,9 @@ public class RobotContainer {
 
     NamedCommands.registerCommand("TorchIntake", torchIntakeCommand);
 
+    NamedCommands.registerCommand("Stow", 
+      new InstantCommand(() -> intakeSubsystem.setIntakeState(IntakeState.kStow2)));
+
     // Configure the trigger bindings
     configureBindings();
   }

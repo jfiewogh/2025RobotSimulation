@@ -55,8 +55,11 @@ public class IntakeSubsystem extends SubsystemBase {
    * Values are in degrees
   */
   public enum IntakeState {
+    // coral is vertical
     kStow1(-40, 0),
+    // coral is horizontal
     kStow2(-40, 90),
+
     kGround(50, 90),
     kTorch(30, 0),
     kSource(-40, 90),

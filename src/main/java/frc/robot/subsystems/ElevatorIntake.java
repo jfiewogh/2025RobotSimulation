@@ -61,7 +61,7 @@ public class ElevatorIntake extends SubsystemBase {
     }
   }
 
-  /** Creates a new Score. */
+  /** Creates a new ElevatorIntake. */
   public ElevatorIntake(ElevatorSubsystem elevatorSubsystem, IntakeSubsystem intakeSubsystem, Coral coral) {
     this.elevatorSubsystem = elevatorSubsystem;
     this.intakeSubsystem = intakeSubsystem;
@@ -152,7 +152,7 @@ public class ElevatorIntake extends SubsystemBase {
           // If scored
           if (elevatorSubsystem.atSetpoint()) {
             isScored = true;
-            createScoredCoral();
+            setScoredCoral();
           }
         }
       // If not scored
@@ -172,7 +172,7 @@ public class ElevatorIntake extends SubsystemBase {
     }
   }
 
-  private void createScoredCoral() {
+  private void setScoredCoral() {
     scoredCoralPose = coral.getPose();
     scoredCoralPublisher.set(scoredCoralPose);
     coral.visible = false;
