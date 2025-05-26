@@ -18,9 +18,6 @@ import frc.robot.Constants.MotorSpeed;
 import frc.robot.hardware.CustomPIDController;
 import frc.robot.hardware.SimMotor;
 
-
-/* This subsystem is used when you want to move both the elevator and intake for a command */
-
 public class ElevatorSubsystem extends SubsystemBase {
   /* Height Constants */
   private static final double stage1HeightMeters = 0.662178;

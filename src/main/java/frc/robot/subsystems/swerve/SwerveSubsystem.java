@@ -194,7 +194,7 @@ public class SwerveSubsystem extends SubsystemBase {
     return moduleStates;
   }
 
-  // ANY DRIFTING IS DUE TO PID (the angle does not get to desired position instantly)
+  // Any drifting is due to PID (the angle does not get to desired position instantly)
 
   @Override
   public void periodic() {

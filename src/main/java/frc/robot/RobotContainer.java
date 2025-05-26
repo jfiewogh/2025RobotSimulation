@@ -169,6 +169,7 @@ public class RobotContainer {
       new WaitUntilCommand(elevatorIntake::atSetpoint),
       new InstantCommand(elevatorIntake::score),
       new WaitUntilCommand(() -> elevatorIntake.isScored),
+      new InstantCommand(elevatorIntake::score),
       new WaitUntilCommand(elevatorIntake::atSetpoint)
     );
   }

@@ -4,14 +4,14 @@
 
 package frc.robot.subsystems;
 
-import javax.lang.model.element.ElementVisitor;
-
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.subsystems.ElevatorSubsystem.ElevatorState;
 import frc.robot.subsystems.IntakeSubsystem.IntakeState;
+
+/* This subsystem is used when you want to move both the elevator and intake for a command */
 
 public class ElevatorIntake extends SubsystemBase {
   private final ElevatorSubsystem elevatorSubsystem;
