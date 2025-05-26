@@ -63,15 +63,14 @@ public class ElevatorSubsystem extends SubsystemBase {
   public enum ElevatorState {
     kSource(0.55),
 
-    kL1(0.2),
+    kL1(0.25),
     kL2(0.6),
-    kL3(0.8),
-    kL4(kMaxElevatorHeightMeters),
+    kL3(1.02),
+    kL4(kMaxElevatorHeightMeters - 0.15),
 
-    kL1Score(kL1.getPosition()),
-    kL2Score(kL2.getPosition()),
-    kL3Score(kL3.getPosition()),
-    kL4Score(kL4.getPosition() - 0.37);
+    kL2Score(kL2.getPosition() - 0.37),
+    kL3Score(kL3.getPosition() - 0.37),
+    kL4Score(kL4.getPosition() - 0.3);
 
     private double position;
 

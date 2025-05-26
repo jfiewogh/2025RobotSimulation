@@ -19,12 +19,14 @@ public class ElevatorIntake extends SubsystemBase {
 
   /* Move Elevator and Intake to Position */
   private boolean goUp = false;
-  private ElevatorState elevatorState;
+  private static ElevatorState elevatorState;
 
   /* Score */
   private boolean score = false;
+  private boolean alignedForScore = false;
+  private boolean isScoring = false;
   public boolean isScored = false;
-  private ReefScoreState reefScoreState;
+  public static ReefScoreState reefScoreState;
   private boolean goDown = false;
   private boolean done = false;
 
@@ -38,26 +40,31 @@ public class ElevatorIntake extends SubsystemBase {
     .getStructTopic("Scored Coral", Pose3d.struct).publish();
 
   /* Reef score state */
-  public enum ReefScoreState {
-    kL4(IntakeState.kL4, ElevatorState.kL4Score),
-    kL3(IntakeState.kL3, ElevatorState.kL3Score),
-    kL2(IntakeState.kL2, ElevatorState.kL2Score),
-    kL1(IntakeState.kL1, ElevatorState.kL1Score);
+  public static enum ReefScoreState {
+    kL4(IntakeState.kL4, ElevatorState.kL4Score, true),
+    kL3(IntakeState.kL3Score, ElevatorState.kL3Score, false),
+    kL2(IntakeState.kL2Score, ElevatorState.kL2Score, false),
+    kL1(IntakeState.kL1Score, ElevatorState.kL1, true);
 
-    private IntakeState intakeState;
-    private ElevatorState elevatorState;
+    private final IntakeState intakeState;
+    private final ElevatorState elevatorState;
+    private final boolean isSimultaneous;
 
-    private ReefScoreState(IntakeState intakeState, ElevatorState elevatorState) {
+    /** isSimultaneous shows whether arm and wrist move at same time */
+    private ReefScoreState(IntakeState intakeState, ElevatorState elevatorState, boolean isSimultaneous) {
       this.intakeState = intakeState;
       this.elevatorState = elevatorState;
+      this.isSimultaneous = isSimultaneous;
     }
 
     public IntakeState getIntakeState() {
       return intakeState;
     }
-
     public ElevatorState getElevatorState() {
       return elevatorState;
+    }
+    public boolean isSimultaneous() {
+      return isSimultaneous;
     }
   }
 
@@ -66,7 +73,7 @@ public class ElevatorIntake extends SubsystemBase {
     this.elevatorSubsystem = elevatorSubsystem;
     this.intakeSubsystem = intakeSubsystem;
     this.coral = coral;
-    setState(ElevatorState.kL4, ReefScoreState.kL4);
+    setState(ElevatorState.kL1, ReefScoreState.kL1);
   }
 
   public void setState(ElevatorState elevatorState, ReefScoreState reefScoreState) {
@@ -79,27 +86,38 @@ public class ElevatorIntake extends SubsystemBase {
     if (!score) {
       if (goUp) {
         goUp = score ? true : false;
-        intakeSubsystem.setIntakeState(IntakeState.kStow2);
+        intakeSubsystem.setIntakeState(IntakeState.kStowHorizontal);
       } else {
         goUp = score ? false : true;
-        intakeSubsystem.setIntakeState(IntakeState.kStow2);
+        intakeSubsystem.setIntakeState(IntakeState.kStowHorizontal);
       }  
+    // If you want to cancel the scoring
+    } else if (!isScored) {
+      goUp = true;
+      alignedForScore = false;
+      score = false;
+      intakeSubsystem.setIntakeState(IntakeState.kStowHorizontal);
     }
   }
 
   /** Score coral on reef */
   public void score() {
-    if (!isScored) {
+    if (!alignedForScore) {
+      intakeSubsystem.isSimultaneous = reefScoreState.isSimultaneous();
       if (elevatorSubsystem.getDesiredPosition() != 0 && atSetpoint()) {
         goUp = false;
         done = false;
         score = true;
+        isScoring = false;
         isScored = false;
         intakeSubsystem.setIntakeState(reefScoreState.getIntakeState());
-      }
+      } 
+    } else if (!isScored) {
+      isScoring = true;
+      elevatorSubsystem.goDown(reefScoreState.getElevatorState().getPosition());
     } else if (!goDown) {
       goDown = true;
-      intakeSubsystem.setIntakeState(IntakeState.kStow1);
+      intakeSubsystem.setIntakeState(IntakeState.kStowVertical);
     }
   }
 
@@ -112,7 +130,7 @@ public class ElevatorIntake extends SubsystemBase {
       done = false;
     } else {
       isSourceIntake = false;
-      intakeSubsystem.setIntakeState(IntakeState.kStow2);
+      intakeSubsystem.setIntakeState(IntakeState.kStowHorizontal);
       elevatorSubsystem.setDesiredPosition(0);
     }
   }
@@ -129,13 +147,14 @@ public class ElevatorIntake extends SubsystemBase {
       }
     // If moving elevator up or down
     } else if (!score) {
+      intakeSubsystem.isSimultaneous = true;
       // If going up
       if (goUp) {
         // If arm and wrist are at right position, go up
         if (intakeSubsystem.atSetpoint()) {
           elevatorSubsystem.setElevatorState(elevatorState);
         }
-      // If going down */
+      // If going down
       } else {
         // If arm and wrist are at right position, go down
         if (intakeSubsystem.atSetpoint()) {
@@ -144,18 +163,22 @@ public class ElevatorIntake extends SubsystemBase {
       }
     // If scoring coral
     } else {
-      // If scored
-      if (!isScored) {
-        // If arm and wrist are aligned, go down
+      // If not aligned
+      if (!alignedForScore) {
+        // if aligned
         if (intakeSubsystem.atSetpoint()) {
-          elevatorSubsystem.goDown(reefScoreState.getElevatorState().getPosition());
-          // If scored
-          if (elevatorSubsystem.atSetpoint()) {
-            isScored = true;
-            setScoredCoral();
-          }
+          alignedForScore = true;
         }
+      }
       // If not scored
+      else if (!isScored) {
+        // If scored
+        if (isScoring && elevatorSubsystem.atSetpoint()) {
+          isScored = true;
+          isScoring = false;
+          setScoredCoral();
+        }
+      // If not stowed
       } else if (!done) {
         // If arm and wrist are aligned and want to go down, then go down
         if (goDown && intakeSubsystem.atSetpoint()) {
@@ -166,6 +189,7 @@ public class ElevatorIntake extends SubsystemBase {
             score = false;
             isScored = false;
             goDown = false;
+            alignedForScore = false;
           }
         }
       }

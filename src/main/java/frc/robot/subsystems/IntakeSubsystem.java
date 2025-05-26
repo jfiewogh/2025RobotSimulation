@@ -56,17 +56,22 @@ public class IntakeSubsystem extends SubsystemBase {
   */
   public enum IntakeState {
     // coral is vertical
-    kStow1(-40, 0),
+    kStowVertical(-45, 0),
     // coral is horizontal
-    kStow2(-40, 90),
+    kStowHorizontal(-45, 90),
 
     kGround(50, 90),
     kTorch(30, 0),
-    kSource(-40, 90),
-    kL1(0, 0),
-    kL2(0, 0),
-    kL3(0, 0),
-    kL4(0, 0);
+    kSource(-45, 90),
+
+    kL1(-45, 90),
+    kL2(-45, 0),
+    kL3(-45, 0),
+    kL4(0, 0),
+
+    kL1Score(5, 90),
+    kL2Score(0, 0),
+    kL3Score(0, 0);
 
     private final double armPosition;
     private final double wristPosition;
@@ -89,10 +94,12 @@ public class IntakeSubsystem extends SubsystemBase {
     }
   }
 
+  public boolean isSimultaneous = false;
+
   /** Creates a new IntakeSubsystem. */
   public IntakeSubsystem(ElevatorSubsystem elevatorSubsystem) {
     this.elevatorSubsystem = elevatorSubsystem;
-    setIntakeState(IntakeState.kStow2);
+    setIntakeState(IntakeState.kStowHorizontal);
   }
 
   private void setArmPosition(double position) {
@@ -106,7 +113,7 @@ public class IntakeSubsystem extends SubsystemBase {
   public void setIntakeState(IntakeState intakeState) {
     setArmPosition(Units.degreesToRotations(intakeState.getArmPosition()));
     setWristPosition(Units.degreesToRotations(intakeState.getWristPosition()));
-    System.out.println(desiredArmPosition + " " + desiredWristPosition);
+    // System.out.println(desiredArmPosition + " " + desiredWristPosition);
   }
 
   public Command setIntakeStateCommand(IntakeState intakeState) {
@@ -120,8 +127,13 @@ public class IntakeSubsystem extends SubsystemBase {
     double elevatorHeightMeters = elevatorSubsystem.getStage3Pose().getZ();
 
     /* Set Speeds */
-    double armMotorSpeed = armController.calculateFromSetpoint(armMotor.getPositionRotations(), desiredArmPosition);
-    armMotor.setSpeedAndUpdatePosition(armMotorSpeed);
+    if (isSimultaneous || wristAtSetpoint()) {
+      double armMotorSpeed = armController.calculateFromError(desiredArmPosition - armMotor.getPositionRotations());
+      if (Math.abs(armMotorSpeed) > 0.1) {
+        System.out.println(armMotor.getPositionRotations() + " " + desiredArmPosition + " " + armMotorSpeed);
+      }
+      armMotor.setSpeedAndUpdatePosition(armMotorSpeed);
+    }
 
     double wristMotorSpeed = wristController.calculateFromSetpoint(wristMotor.getPositionRotations(), desiredWristPosition);
     wristMotor.setSpeedAndUpdatePosition(wristMotorSpeed);
@@ -149,9 +161,12 @@ public class IntakeSubsystem extends SubsystemBase {
     wristPublisher.set(wristPose);
   }
 
+  public boolean wristAtSetpoint() {
+    return Math.abs(desiredWristPosition - wristMotor.getPositionRotations()) < 0.01;
+  }
+
   public boolean atSetpoint() {
-    return Math.abs(desiredArmPosition - armMotor.getPositionRotations()) < 0.01
-    && Math.abs(desiredWristPosition - wristMotor.getPositionRotations()) < 0.01;
+    return Math.abs(desiredArmPosition - armMotor.getPositionRotations()) < 0.01 && wristAtSetpoint();
   }
 
   /* Get Pose */

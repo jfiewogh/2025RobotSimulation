@@ -98,7 +98,7 @@ public class RobotContainer {
     NamedCommands.registerCommand("TorchIntake", torchIntakeCommand);
 
     NamedCommands.registerCommand("Stow", 
-      new InstantCommand(() -> intakeSubsystem.setIntakeState(IntakeState.kStow2)));
+      new InstantCommand(() -> intakeSubsystem.setIntakeState(IntakeState.kStowHorizontal)));
 
     // Configure the trigger bindings
     configureBindings();
@@ -130,7 +130,7 @@ public class RobotContainer {
     // Ground Intake
     new JoystickButton(keyboardLeftStick, 3)
       .onTrue(groundIntakeCommand)
-      .onFalse(new InstantCommand(() -> intakeSubsystem.setIntakeState(IntakeState.kStow1)));
+      .onFalse(new InstantCommand(() -> intakeSubsystem.setIntakeState(IntakeState.kStowHorizontal)));
     
     // Source Intake
     new JoystickButton(keyboardLeftStick, 4)
@@ -147,14 +147,17 @@ public class RobotContainer {
 
     /* Elevator Choices */
     // delete
-    new JoystickButton(keyboardThirdStick, 4).onTrue(new InstantCommand(() -> 
-      elevatorIntake.setState(ElevatorState.kL4, ReefScoreState.kL4)));
+    new JoystickButton(keyboardThirdStick, 4).onTrue(new InstantCommand(() -> {
+      elevatorIntake.setState(ElevatorState.kL4, ReefScoreState.kL4);
+    }));
     // insert
-    new JoystickButton(keyboardThirdStick, 1).onTrue(new InstantCommand(() -> 
-      elevatorIntake.setState(ElevatorState.kL3, ReefScoreState.kL3)));
+    new JoystickButton(keyboardThirdStick, 1).onTrue(new InstantCommand(() -> {
+      elevatorIntake.setState(ElevatorState.kL3, ReefScoreState.kL3);
+    }));
     // end
-    new JoystickButton(keyboardThirdStick, 5).onTrue(new InstantCommand(() -> 
-      elevatorIntake.setState(ElevatorState.kL2, ReefScoreState.kL2)));
+    new JoystickButton(keyboardThirdStick, 5).onTrue(new InstantCommand(() -> {
+      elevatorIntake.setState(ElevatorState.kL2, ReefScoreState.kL2);}
+    ));
     // home
     new JoystickButton(keyboardThirdStick, 2).onTrue(new InstantCommand(() -> 
       elevatorIntake.setState(ElevatorState.kL1, ReefScoreState.kL1)));

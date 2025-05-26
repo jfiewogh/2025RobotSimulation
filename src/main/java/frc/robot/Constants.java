@@ -13,6 +13,7 @@ import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.util.Units;
 import frc.robot.hardware.CustomPIDController;
+import frc.robot.subsystems.ElevatorIntake;
 import frc.robot.subsystems.swerve.SwerveUtils;
 
 /**
@@ -119,7 +120,6 @@ public final class Constants {
     );
   }
 
-  private static final double kReefAlignOffsetMeters = 0.03;
   private static final double kSourceAlignOffsetMeters = 0.02;
 
   // https://firstfrc.blob.core.windows.net/frc2025/FieldAssets/2025FieldDrawings-FieldLayoutAndMarking.pdf
@@ -166,14 +166,11 @@ public final class Constants {
         new Rotation3d(0, Units.degreesToRadians(yRotation), Units.degreesToRadians(zRotation)));
 
       leftAlignPose = pose.toPose2d().plus(
-        new Transform2d(RobotConstants.kBumperLengthMeters / 2 + kReefAlignOffsetMeters, -0.16, Rotation2d.k180deg)
-      );
+        new Transform2d(RobotConstants.kBumperLengthMeters / 2, -0.16, Rotation2d.k180deg));
       rightAlignPose = pose.toPose2d().plus(
-        new Transform2d(RobotConstants.kBumperLengthMeters / 2 + kReefAlignOffsetMeters, 0.16, Rotation2d.k180deg))
-      ;
+        new Transform2d(RobotConstants.kBumperLengthMeters / 2, 0.16, Rotation2d.k180deg));
       sourceAlignPose = pose.toPose2d().plus(
-        new Transform2d(RobotConstants.kBumperLengthMeters / 2 + kSourceAlignOffsetMeters, 0, Rotation2d.k180deg)
-      );
+        new Transform2d(RobotConstants.kBumperLengthMeters / 2 + kSourceAlignOffsetMeters, 0, Rotation2d.k180deg));
       processorAlignPose = pose.toPose2d();
       bargeAlignPose = pose.toPose2d();
     }
@@ -182,11 +179,26 @@ public final class Constants {
       return pose;
     }
 
+    private double getReefOffsetAlignMeters() {
+      switch (ElevatorIntake.reefScoreState) {
+        case kL1:
+          return -0.012;
+        case kL2:
+          return -0.012;
+        case kL3:
+          return -0.012;
+        default:
+          return -0.02;
+      }
+    }
+
     public Pose2d getLeftAlignPose() {
-      return leftAlignPose;
+      //System.out.println(leftAlignPose);
+      //System.out.println(leftAlignPose.plus(new Transform2d(0, getReefOffsetAlignMeters(), Rotation2d.kZero)));
+      return leftAlignPose.plus(new Transform2d(getReefOffsetAlignMeters(), 0, Rotation2d.kZero));
     }
     public Pose2d getRightAlignPose() {
-      return rightAlignPose;
+      return rightAlignPose.plus(new Transform2d(getReefOffsetAlignMeters(), 0, Rotation2d.kZero));
     }
     public Pose2d getSourceAlignPose() {
       return sourceAlignPose;

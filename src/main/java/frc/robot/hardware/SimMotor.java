@@ -3,7 +3,7 @@ package frc.robot.hardware;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-public class SimMotor extends SubsystemBase {
+public class SimMotor {
     private double speedRotationsPerSecond = 0;
     private double rotations = 0;
 
@@ -19,8 +19,7 @@ public class SimMotor extends SubsystemBase {
     }
 
     private void updatePosition(double interval) {
-        rotations += speedRotationsPerSecond * interval;
-        lastUpdateTime += interval;
+        rotations += speedRotationsPerSecond * 0.02;
     }
 
     public double getPositionRotations() {
@@ -34,11 +33,4 @@ public class SimMotor extends SubsystemBase {
     public void setPositionRotations(double rotations) {
         this.rotations = rotations;
     }
-
-    // @Override
-    // public void periodic() {
-    //     double time = getTime();
-    //     updatePosition(time - lastUpdateTime);
-    //     lastUpdateTime = time;
-    // }
 }
