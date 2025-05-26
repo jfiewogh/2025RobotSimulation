@@ -26,7 +26,6 @@ import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Joystick;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -70,7 +69,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
   public static final double kPhysicalMaxRotationSpeedRadiansPerSecond = SwerveUtils.getAngularValue(SwerveModule.kPhysicalMaxDriveSpeedMetersPerSecond, kDriveBaseRadius);
 
-  public static final double kChosenMaxDriveSpeedMetersPerSecond = 4;
+  public static final double kChosenMaxDriveSpeedMetersPerSecond = SwerveModule.kPhysicalMaxDriveSpeedMetersPerSecond;
   public static final double kChosenMaxRotationSpeedRadiansPerSecond = SwerveUtils.getAngularValue(kChosenMaxDriveSpeedMetersPerSecond, kDriveBaseRadius);
 
   private Rotation2d rawGyroRotation = new Rotation2d();
@@ -81,8 +80,7 @@ public class SwerveSubsystem extends SubsystemBase {
   private DoubleSupplier getLeftStickY;
   private DoubleSupplier getRightStickX;
 
-
-  private Timer timer = new Timer();
+  public static boolean isAuto = false;
   
 
   /** Creates a new SwerveSubsystem. */
@@ -103,8 +101,6 @@ public class SwerveSubsystem extends SubsystemBase {
         getRightStickX = () -> real.getRawAxis(4);
         break;
     }
-
-    timer.restart();
   }
 
   public void initAuto() {
@@ -202,7 +198,9 @@ public class SwerveSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
-    fieldCentricSwerve(getLeftStickY, getLeftStickX, getRightStickX);
+    if (!isAuto) {
+      fieldCentricSwerve(getLeftStickY, getLeftStickX, getRightStickX);
+    }
 
     gyroAnglePublisher.set(rawGyroRotation);
 
@@ -224,8 +222,11 @@ public class SwerveSubsystem extends SubsystemBase {
     }
   }
   public void setChassisSpeedsAuto(ChassisSpeeds speeds) {
+    isAuto = true;
     setChassisSpeeds(speeds);
+    gyroAnglePublisher.set(rawGyroRotation);
     updateOdometry();
+    posePublisher.set(getPose());
   }
 
   public void fieldCentricSwerve(DoubleSupplier leftStickY, DoubleSupplier leftStickX, DoubleSupplier rightStickX) {
@@ -252,7 +253,7 @@ public class SwerveSubsystem extends SubsystemBase {
   public void simulationPeriodic() {
   }
 
-  // Commands
+  /* Commands */
 
   // does not work for simulation
   public Command resetGyroCommand() {

@@ -52,7 +52,7 @@ public final class Constants {
   public static enum Mechanism {
     kDrive(1.0 / 5.0),
     kAngle(1.0 / 3.0 / 4.0),
-    kElevator(1.0 / 50.0); // random value
+    kElevator(1.0 / 25.0); // random value
 
     private final double gearRatio; 
 
@@ -120,20 +120,22 @@ public final class Constants {
   }
 
   private static final double kReefAlignOffsetMeters = 0.03;
+  private static final double kSourceAlignOffsetMeters = 0.02;
 
+  // https://firstfrc.blob.core.windows.net/frc2025/FieldAssets/2025FieldDrawings-FieldLayoutAndMarking.pdf
   public static enum AprilTag {
     k1(657.37, 25.80, 58.50, 126, 0),
     k2(657.37, 291.20, 58.50, 234, 0),
-    k12(0, 0, 0, 0, 0),
-    k13(0, 0, 0, 0, 0),
+    k12(33.51, 25.8, 58.50, 54, 0),
+    k13(33.51, 291.20, 58.50, 306, 0),
 
-    k3(0, 0, 0, 0, 0),
-    k16(0, 0, 0, 0, 0),
+    k3(455.15, 317.15, 51.25, 270, 0),
+    k16(235.73, -0.15, 51.25, 90, 0),
 
-    k4(0, 0, 0, 0, 30),
-    k5(0, 0, 0, 0, 30),
-    k14(0, 0, 0, 0, 30),
-    k15(0, 0, 0,0, 30),
+    k4(365.20, 241.64, 73.54, 0, 30),
+    k5(365.20, 75.30, 73.54, 0, 30),
+    k14(325.68, 241.64, 73.54, 180, 30),
+    k15(325.68, 75.39, 73.54,180, 30),
 
     // opponent side
     k6(530.49, 130.17, 12.13, 300, 0),
@@ -164,10 +166,14 @@ public final class Constants {
         new Rotation3d(0, Units.degreesToRadians(yRotation), Units.degreesToRadians(zRotation)));
 
       leftAlignPose = pose.toPose2d().plus(
-        new Transform2d(RobotConstants.kBumperLengthMeters / 2 + kReefAlignOffsetMeters, -0.16, Rotation2d.k180deg));
+        new Transform2d(RobotConstants.kBumperLengthMeters / 2 + kReefAlignOffsetMeters, -0.16, Rotation2d.k180deg)
+      );
       rightAlignPose = pose.toPose2d().plus(
-        new Transform2d(RobotConstants.kBumperLengthMeters / 2 + kReefAlignOffsetMeters, 0.16, Rotation2d.k180deg));
-      sourceAlignPose = pose.toPose2d();
+        new Transform2d(RobotConstants.kBumperLengthMeters / 2 + kReefAlignOffsetMeters, 0.16, Rotation2d.k180deg))
+      ;
+      sourceAlignPose = pose.toPose2d().plus(
+        new Transform2d(RobotConstants.kBumperLengthMeters / 2 + kSourceAlignOffsetMeters, 0, Rotation2d.k180deg)
+      );
       processorAlignPose = pose.toPose2d();
       bargeAlignPose = pose.toPose2d();
     }
@@ -205,14 +211,28 @@ public final class Constants {
   };
 
   public static AprilTag[] sourceAprilTags = {
-    // figure this out later
+    // opponent
+    AprilTag.k1,
+    AprilTag.k2,
+    // alliance
+    AprilTag.k12,
+    AprilTag.k13
   };
 
   // unused, no algae intake
   public static AprilTag[] processorAprilTags = {
-    //
+    // opponent
+    AprilTag.k3,
+    // aliance
+    AprilTag.k16
   };
 
   public static AprilTag[] bargeAprilTags = {
+    // alilance side
+    AprilTag.k14,
+    AprilTag.k15,
+    // opponent side
+    AprilTag.k4,
+    AprilTag.k5
   };
 }

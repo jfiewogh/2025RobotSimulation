@@ -6,19 +6,26 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 public class SimMotor extends SubsystemBase {
     private double speedRotationsPerSecond = 0;
     private double rotations = 0;
-    private double lastUpdateTime = getTime();
 
+    private double lastUpdateTime = Timer.getTimestamp(); 
+    // doesn't work for autonomous swerve for some reason
+
+    // unused
     public void setSpeedRotationsPerSecond(double speed) {
         speedRotationsPerSecond = speed;
     }
 
     public void setSpeedAndUpdatePosition(double speed) {
         setSpeedRotationsPerSecond(speed);
-        updatePosition(0.02);
+        if (Timer.getTimestamp() - lastUpdateTime < 0.01) 
+            System.out.println(lastUpdateTime + " " + Timer.getTimestamp());
+        updatePosition(Timer.getTimestamp() - lastUpdateTime);
     }
 
     private void updatePosition(double interval) {
         rotations += speedRotationsPerSecond * interval;
+        // .out.println(interval);
+        lastUpdateTime += interval;
     }
 
     public double getPositionRotations() {
@@ -27,10 +34,6 @@ public class SimMotor extends SubsystemBase {
 
     public double getSpeedRotationsPerSecond() {
         return speedRotationsPerSecond;
-    }
-
-    private static double getTime() {
-        return Timer.getTimestamp();
     }
 
     public void setPositionRotations(double rotations) {

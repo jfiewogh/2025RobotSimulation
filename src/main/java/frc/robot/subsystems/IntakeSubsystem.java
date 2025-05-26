@@ -6,16 +6,13 @@ package frc.robot.subsystems;
 
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import frc.robot.hardware.CustomPIDController;
 import frc.robot.hardware.SimMotor;
 
@@ -26,9 +23,10 @@ public class IntakeSubsystem extends SubsystemBase {
   private final SimMotor wristMotor = new SimMotor();
 
   private final CustomPIDController armController = new CustomPIDController(
-    1, 0, 0, 0.25, 1);
+    1, 0, 0, 0.25, 1.5);
   private final CustomPIDController wristController = new CustomPIDController(
-    1, 0, 0, 0.25, 1);
+    1, 0, 0, 0.25, 1.5
+    );
 
   /* Simulation Components */
   private Pose3d initialArmPose = new Pose3d(0.32385, 0, 0.189207, Rotation3d.kZero);
@@ -92,6 +90,7 @@ public class IntakeSubsystem extends SubsystemBase {
   /** Creates a new IntakeSubsystem. */
   public IntakeSubsystem(ElevatorSubsystem elevatorSubsystem) {
     this.elevatorSubsystem = elevatorSubsystem;
+    setIntakeState(IntakeState.kStow2);
   }
 
   private void setArmPosition(double position) {

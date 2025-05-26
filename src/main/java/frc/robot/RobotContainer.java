@@ -19,8 +19,12 @@ import frc.robot.subsystems.swerve.SwerveSubsystem;
 import frc.robot.subsystems.swerve.Vision;
 
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.ScheduleCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
+import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
@@ -67,12 +71,7 @@ public class RobotContainer {
     new WaitUntilCommand(intakeSubsystem::atSetpoint),
     new InstantCommand(() -> coral.visible = true)
   );
-  private final Command sourceIntakeCommand = new SequentialCommandGroup(
-    intakeSubsystem.setIntakeStateCommand(IntakeState.kSource),
-    new InstantCommand(() -> elevatorSubsystem.setElevatorState(ElevatorState.kSource)),
-    new WaitUntilCommand(elevatorIntake::atSetpoint),
-    new InstantCommand(() -> coral.visible = true)
-  );
+  private final Command sourceIntakeCommand = new InstantCommand(elevatorIntake::sourceIntake);
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -116,10 +115,13 @@ public class RobotContainer {
 
     // Up or Down
     new JoystickButton(keyboardLeftStick, 1).onTrue(
-      new InstantCommand(() -> elevatorIntake.align()));
+      new InstantCommand(elevatorIntake::align));
     // Align Score, Then Score
-    new JoystickButton(keyboardLeftStick, 2).onTrue(
-      new InstantCommand(() -> elevatorIntake.score()));
+
+    new JoystickButton(keyboardLeftStick, 2)
+      .whileTrue(Commands.run(elevatorIntake::score)
+      // .whileTrue(Scheduler.run()new InstantCommand(() -> elevatorIntake.score()).execute())
+    );
 
     /* Intake and Align */
 
@@ -127,21 +129,19 @@ public class RobotContainer {
     new JoystickButton(keyboardLeftStick, 3)
       .onTrue(groundIntakeCommand)
       .onFalse(new InstantCommand(() -> intakeSubsystem.setIntakeState(IntakeState.kStow1)));
-    // Torch 
-    /*
-    new JoystickButton(keyboardRightStick, 2)
-      .onTrue(torchIntakeCommand)
-      .onFalse(new InstantCommand(() -> intakeSubsystem.setIntakeState(IntakeState.kStow1)));
-      */
+    
     // Source Intake
     new JoystickButton(keyboardLeftStick, 4)
       .onTrue(sourceIntakeCommand);
+    
+    // Outtake
+    new JoystickButton(keyboardRightStick, 4)
+      .onTrue(new InstantCommand(() -> coral.visible = false));
 
     // Align
-    new JoystickButton(keyboardRightStick, 1).onTrue(leftAlignCommand);
-    new JoystickButton(keyboardRightStick, 2).onTrue(rightAlignCommand);
-    new JoystickButton(keyboardRightStick, 3).onTrue(sourceAlignCommand);
-    // future: barge align
+    new JoystickButton(keyboardRightStick, 1).whileTrue(leftAlignCommand);
+    new JoystickButton(keyboardRightStick, 2).whileTrue(rightAlignCommand);
+    new JoystickButton(keyboardRightStick, 3).whileTrue(sourceAlignCommand);
 
     /* Elevator Choices */
     new JoystickButton(keyboardThirdStick, 4).onTrue(new InstantCommand(() -> 
@@ -153,9 +153,9 @@ public class RobotContainer {
     new JoystickButton(keyboardThirdStick, 2).onTrue(new InstantCommand(() -> 
       elevatorIntake.setState(ElevatorState.kL1, ReefScoreState.kL1)));
 
+    // fix this when you have access to controller
     switch (Constants.kControllerType) {
       case KEYBOARD:
-        // new JoystickButton(keyboardRightStick, 1).onTrue(swerveSubsystem.resetGyroCommand());
         break;
       case XBOX:
         new JoystickButton(realController, 1).onTrue(swerveSubsystem.resetGyroCommand());
@@ -165,9 +165,9 @@ public class RobotContainer {
 
   public Command fullAutoScoreCommand() {
     return new SequentialCommandGroup(
-      new InstantCommand(() -> elevatorIntake.align()),
+      new InstantCommand(elevatorIntake::align),
       new WaitUntilCommand(elevatorIntake::atSetpoint),
-      new InstantCommand(() -> elevatorIntake.score()),
+      new InstantCommand(elevatorIntake::score),
       new WaitUntilCommand(() -> elevatorIntake.isScored),
       new WaitUntilCommand(elevatorIntake::atSetpoint)
     );
@@ -175,30 +175,9 @@ public class RobotContainer {
 
   /**
    * Use this to pass the autonomous command to the main {@link Robot} class.
-   *
    * @return the command to run in autonomous
    */
   public Command getAutonomousCommand() {
-
-    // TrajectoryConfig trajectoryConfig = new TrajectoryConfig(
-    //   SwerveSubsystem.maxDriveSpeedMetersPerSecond,
-    //   SwerveSubsystem.maxDriveAccelerationMetersPerSecondSquared
-    // );
-
-    // ArrayList<Pose2d> waypoints = new ArrayList<Pose2d>();
-    // waypoints.add(new Pose2d(new Translation2d(0, 0), Rotation2d.fromDegrees(0)));
-    // waypoints.add(new Pose2d(new Translation2d(5, 10), Rotation2d.fromDegrees(50)));
-    // waypoints.add(new Pose2d(new Translation2d(20, -5), Rotation2d.fromDegrees(90)));
-    // waypoints.add(new Pose2d(new Translation2d(0, 0), Rotation2d.fromDegrees(0)));
-
-    // Trajectory trajectory = TrajectoryGenerator.generateTrajectory(
-    //   waypoints, 
-    //   trajectoryConfig
-    // );
-
-    // // An example command will be run in autonomous
-    // return new AutoCommand(swerveSubsystem, trajectory);
-
     return new PathPlannerAuto("3 Coral Auto");
   }
 }

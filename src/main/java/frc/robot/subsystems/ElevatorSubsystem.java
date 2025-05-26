@@ -4,12 +4,6 @@
 
 package frc.robot.subsystems;
 
-import com.revrobotics.RelativeEncoder;
-import com.revrobotics.spark.SparkLowLevel.MotorType;
-import com.revrobotics.spark.SparkMax;
-
-import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation3d;
@@ -18,18 +12,14 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructPublisher;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.Constants.Mechanism;
 import frc.robot.Constants.MotorSpeed;
 import frc.robot.hardware.CustomPIDController;
 import frc.robot.hardware.SimMotor;
 
-/* Current Issues
- * - Elevator height not matching after pressing up and down quickly
- */
 
+/* This subsystem is used when you want to move both the elevator and intake for a command */
 
 public class ElevatorSubsystem extends SubsystemBase {
   /* Height Constants */
@@ -45,7 +35,7 @@ public class ElevatorSubsystem extends SubsystemBase {
   private final SimMotor elevatorMotor = new SimMotor(); // represent both motors using one
 
   private static final CustomPIDController kElevatorController = new CustomPIDController(
-    5, 0, 0.1, kMaxElevatorHeightMeters, MotorSpeed.kVortex.getFreeSpeedRotationsPerSecond());
+    4, 0, 0.1, kMaxElevatorHeightMeters, MotorSpeed.kVortex.getFreeSpeedRotationsPerSecond() * 0.8);
 
   /* Simulation Components */
   private Pose3d stage0Pose = Pose3d.kZero;
@@ -74,7 +64,7 @@ public class ElevatorSubsystem extends SubsystemBase {
   /* Elevator States */
 
   public enum ElevatorState {
-    kSource(0.3),
+    kSource(0.55),
 
     kL1(0.2),
     kL2(0.6),
@@ -84,7 +74,7 @@ public class ElevatorSubsystem extends SubsystemBase {
     kL1Score(kL1.getPosition()),
     kL2Score(kL2.getPosition()),
     kL3Score(kL3.getPosition()),
-    kL4Score(kL4.getPosition() - 0.5);
+    kL4Score(kL4.getPosition() - 0.37);
 
     private double position;
 
@@ -116,7 +106,7 @@ public class ElevatorSubsystem extends SubsystemBase {
     return new InstantCommand(
       () -> {
         this.desiredPositionMeters = desiredPositionMeters;
-        setConstantSpeed(-MotorSpeed.kVortex.getFreeSpeedRotationsPerSecond() * 0.8);
+        setConstantSpeed(-MotorSpeed.kVortex.getFreeSpeedRotationsPerSecond() * 0.7);
       }
     );
   }
@@ -252,5 +242,9 @@ public class ElevatorSubsystem extends SubsystemBase {
   /* Get Poses */
   public Pose3d getStage3Pose() {
     return stage3Pose;
+  }
+
+  public double getDesiredPosition() {
+    return desiredPositionMeters;
   }
 }

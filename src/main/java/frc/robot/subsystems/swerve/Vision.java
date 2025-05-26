@@ -22,7 +22,7 @@ public class Vision extends SubsystemBase {
 
   private Pose2d currentPosition;
 
-  private final PIDController translationController = new PIDController(2, 0, 0);
+  private final PIDController translationController = new PIDController(3, 0, 0);
 
   private final CustomPIDController rotationController = new CustomPIDController(
     2, 0, 0, Math.PI / 2, SwerveSubsystem.kPhysicalMaxRotationSpeedRadiansPerSecond);
@@ -128,5 +128,12 @@ public class Vision extends SubsystemBase {
 
 
     // 
+  }
+
+
+  // use vision to find position of coral relative to camera
+  // then calculate true position
+  public void coralDetection() {
+
   }
 }

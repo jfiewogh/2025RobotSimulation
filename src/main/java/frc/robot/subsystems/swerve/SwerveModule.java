@@ -40,9 +40,9 @@ public class SwerveModule {
         double angleWheelSpeedRotationsPerSecond = PIDConstants.kModuleAngleController.calculateFromError(error.getRotations());
                 
         double angleMotorSpeedRotationsPerSecond = Mechanism.kAngle.fromMechanism(angleWheelSpeedRotationsPerSecond);
-        setSimAngleMotorSpeed(angleMotorSpeedRotationsPerSecond);
+        setAngleMotorSpeed(angleMotorSpeedRotationsPerSecond);
 
-        setSimDriveMotorSpeed(driveMotorSpeedRotationsPerSecond);
+        setDriveMotorSpeed(driveMotorSpeedRotationsPerSecond);
     }
 
     public SwerveModuleState getModuleState() {
@@ -50,17 +50,17 @@ public class SwerveModule {
         return new SwerveModuleState(speedMetersPerSecond, getWheelAnglePosition());
     }
 
-    public void setSimDriveMotorSpeed(double driveMotorSpeedRotationsPerSecond) {
+    public void setDriveMotorSpeed(double driveMotorSpeedRotationsPerSecond) {
         driveSimMotor.setSpeedAndUpdatePosition(driveMotorSpeedRotationsPerSecond);
     }
 
-    public void setSimAngleMotorSpeed(double angleMotorSpeedRotationsPerSecond) {
+    public void setAngleMotorSpeed(double angleMotorSpeedRotationsPerSecond) {
         angleSimMotor.setSpeedAndUpdatePosition(angleMotorSpeedRotationsPerSecond);
     }
 
     public void stop() {
-        setSimDriveMotorSpeed(0);
-        setSimAngleMotorSpeed(0);
+        setDriveMotorSpeed(0);
+        setAngleMotorSpeed(0);
     }
 
     public double getDriveSimMotorPosition() {
